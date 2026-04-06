@@ -1,27 +1,34 @@
 'use client';
 
 import { teamConfig } from '@/lib/team-config';
-import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Calendar, CreditCard, Users } from 'lucide-react';
 
 export function HeroSection() {
   return (
     <section className="relative min-h-[100dvh] flex items-center overflow-hidden">
-      {/* Background gradient */}
+      {/* Background image */}
       <div className="absolute inset-0">
+        <Image
+          src="/hero-bg.png"
+          alt=""
+          fill
+          className="object-cover object-center opacity-30"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/60" />
         <div
-          className="absolute top-0 right-0 w-[60%] h-[80%] opacity-[0.07] blur-[120px]"
+          className="absolute top-0 right-0 w-[60%] h-[80%] opacity-[0.08] blur-[120px]"
           style={{ background: `radial-gradient(ellipse, ${teamConfig.accentColor}, transparent 70%)` }}
         />
-        <div className="absolute bottom-0 left-0 w-[40%] h-[50%] opacity-[0.04] blur-[100px] bg-white" />
       </div>
 
       <div className="relative w-full max-w-[1400px] mx-auto px-6 pt-32 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-8 items-center">
           {/* Left — Text */}
           <div className="max-w-xl">
-            <ScrollReveal>
+            <div className="animate-fade-up" style={{ '--delay': '0ms' } as React.CSSProperties}>
               <div
                 className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium border mb-8"
                 style={{
@@ -33,25 +40,25 @@ export function HeroSection() {
                 <span className="w-1.5 h-1.5 rounded-full" style={{ background: teamConfig.accentColor }} />
                 Powered by Forge612
               </div>
-            </ScrollReveal>
+            </div>
 
-            <ScrollReveal delay={0.05}>
+            <div className="animate-fade-up" style={{ '--delay': '100ms' } as React.CSSProperties}>
               <h1 className="font-display text-4xl md:text-6xl tracking-tighter leading-none text-foreground mb-6">
                 Your team.{' '}
                 <span className="block" style={{ color: teamConfig.accentColor }}>
                   Organized.
                 </span>
               </h1>
-            </ScrollReveal>
+            </div>
 
-            <ScrollReveal delay={0.1}>
+            <div className="animate-fade-up" style={{ '--delay': '200ms' } as React.CSSProperties}>
               <p className="text-base md:text-lg text-text-secondary leading-relaxed max-w-[50ch] mb-10">
                 Schedules, payments, and roster management in one place.
                 Parents pay online. Coaches stay focused on what matters.
               </p>
-            </ScrollReveal>
+            </div>
 
-            <ScrollReveal delay={0.15}>
+            <div className="animate-fade-up" style={{ '--delay': '300ms' } as React.CSSProperties}>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
                   href="/pay"
@@ -68,14 +75,14 @@ export function HeroSection() {
                   View Schedule
                 </Link>
               </div>
-            </ScrollReveal>
+            </div>
           </div>
 
-          {/* Right — Floating UI cards (PlayMetrics-inspired) */}
+          {/* Right — Floating UI cards */}
           <div className="relative hidden lg:block">
             <div className="relative h-[520px]">
               {/* Card 1: Schedule preview */}
-              <ScrollReveal delay={0.2} className="absolute top-0 left-0 w-[320px]">
+              <div className="absolute top-0 left-0 w-[320px] animate-fade-up" style={{ '--delay': '400ms' } as React.CSSProperties}>
                 <FloatingCard>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${teamConfig.accentColor}1A` }}>
@@ -84,15 +91,15 @@ export function HeroSection() {
                     <span className="text-sm font-semibold text-foreground">Upcoming</span>
                   </div>
                   <div className="space-y-3">
-                    <ScheduleRow day="Tue" date="Apr 8" label={teamConfig.sportConfig.practiceLabel} time="5:30 PM" />
-                    <ScheduleRow day="Thu" date="Apr 10" label={teamConfig.sportConfig.practiceLabel} time="5:30 PM" />
-                    <ScheduleRow day="Sat" date="Apr 12" label={teamConfig.sportConfig.gameLabel} time="9:00 AM" accent />
+                    <ScheduleRow day="Mon" date="Apr 7" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
+                    <ScheduleRow day="Wed" date="Apr 9" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
+                    <ScheduleRow day="Sat" date="Apr 12" label={`${teamConfig.sportConfig.gameLabel} vs Thunder`} time="10:00 AM" accent />
                   </div>
                 </FloatingCard>
-              </ScrollReveal>
+              </div>
 
               {/* Card 2: Payment status */}
-              <ScrollReveal delay={0.3} className="absolute top-12 right-0 w-[280px]">
+              <div className="absolute top-12 right-0 w-[280px] animate-fade-up" style={{ '--delay': '550ms' } as React.CSSProperties}>
                 <FloatingCard>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${teamConfig.accentColor}1A` }}>
@@ -101,27 +108,27 @@ export function HeroSection() {
                     <span className="text-sm font-semibold text-foreground">Payments</span>
                   </div>
                   <div className="space-y-3">
-                    <PaymentRow label="Registration Fee" amount="$150" status="paid" />
-                    <PaymentRow label="April Monthly" amount="$75" status="unpaid" />
-                    <PaymentRow label="Tournament Entry" amount="$45" status="unpaid" />
+                    <PaymentRow label="Spring Registration" amount="$175" status="paid" />
+                    <PaymentRow label="April Monthly Dues" amount="$85" status="unpaid" />
+                    <PaymentRow label="Spring Classic Entry" amount="$55" status="unpaid" />
                   </div>
                 </FloatingCard>
-              </ScrollReveal>
+              </div>
 
               {/* Card 3: Roster count */}
-              <ScrollReveal delay={0.4} className="absolute bottom-16 left-8 w-[240px]">
+              <div className="absolute bottom-16 left-8 w-[240px] animate-fade-up" style={{ '--delay': '700ms' } as React.CSSProperties}>
                 <FloatingCard>
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${teamConfig.accentColor}1A` }}>
                       <Users size={18} style={{ color: teamConfig.accentColor }} />
                     </div>
                     <div>
-                      <div className="text-2xl font-display font-bold text-foreground tracking-tight">14</div>
+                      <div className="text-2xl font-display font-bold text-foreground tracking-tight">10</div>
                       <div className="text-xs text-text-muted">{teamConfig.sportConfig.playersLabel} Active</div>
                     </div>
                   </div>
                 </FloatingCard>
-              </ScrollReveal>
+              </div>
             </div>
           </div>
         </div>

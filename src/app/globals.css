@@ -3,8 +3,8 @@
 
 :root {
   --ease-out-expo: cubic-bezier(0.32, 0.72, 0, 1);
-  --team-accent: #E63946;
-  --team-accent-light: #FF6B6B;
+  --team-accent: #2D6A4F;
+  --team-accent-light: #52B788;
 }
 
 @theme inline {
@@ -16,8 +16,8 @@
   --color-border-hover: rgba(255, 255, 255, 0.12);
   --color-text-muted: #71717A;
   --color-text-secondary: #A1A1AA;
-  --color-accent: #E63946;
-  --color-accent-light: #FF6B6B;
+  --color-accent: #2D6A4F;
+  --color-accent-light: #52B788;
   --color-success: #22C55E;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
@@ -86,17 +86,14 @@ body {
   from {
     opacity: 0;
     transform: translateY(24px);
-    filter: blur(8px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
-    filter: blur(0);
   }
 }
 
 .animate-fade-up {
-  animation: fadeUp 0.8s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: fadeUp 0.8s cubic-bezier(0.32, 0.72, 0, 1) both;
   animation-delay: var(--delay, 0ms);
-  opacity: 0;
 }

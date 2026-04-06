@@ -5,12 +5,12 @@ import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { MapPin, Clock } from 'lucide-react';
 
 const sampleEvents = [
-  { id: '1', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-08', startTime: '17:30', endTime: '19:00', location: 'Scottsdale Sports Complex', type: 'practice' },
-  { id: '2', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-10', startTime: '17:30', endTime: '19:00', location: 'Scottsdale Sports Complex', type: 'practice' },
-  { id: '3', title: `${teamConfig.sportConfig.gameLabel} vs Wildcats`, date: '2026-04-12', startTime: '09:00', endTime: '10:30', location: 'Desert Ridge Park', type: 'game' },
-  { id: '4', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-15', startTime: '17:30', endTime: '19:00', location: 'Scottsdale Sports Complex', type: 'practice' },
-  { id: '5', title: 'Spring Tournament', date: '2026-04-19', startTime: '08:00', endTime: '17:00', location: 'Tempe Diablo Stadium', type: 'tournament' },
-  { id: '6', title: `${teamConfig.sportConfig.gameLabel} vs Thunder`, date: '2026-04-22', startTime: '18:00', endTime: '19:30', location: 'Chaparral Park', type: 'game' },
+  { id: '1', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-07', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
+  { id: '2', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-09', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
+  { id: '3', title: `${teamConfig.sportConfig.gameLabel} vs Tacoma Thunder`, date: '2026-04-12', startTime: '10:00', endTime: '11:30', location: 'Seattle Pacific University Gym', type: 'game' },
+  { id: '4', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-14', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
+  { id: '5', title: 'Seattle Spring Classic', date: '2026-04-19', startTime: '08:00', endTime: '18:00', location: 'Showare Center, Kent', type: 'tournament' },
+  { id: '6', title: `${teamConfig.sportConfig.gameLabel} vs Bellevue Ballers`, date: '2026-04-16', startTime: '19:00', endTime: '20:30', location: 'Bellevue College Gym', type: 'game' },
 ];
 
 function formatDate(dateStr: string) {

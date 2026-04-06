@@ -11,12 +11,12 @@ type LookupState = 'idle' | 'loading' | 'results' | 'error' | 'success';
 
 // Demo data for development
 const demoResults = {
-  playerName: 'Marcus Rivera',
+  playerName: 'Jaylen Carter',
   fees: [
-    { id: '1', title: 'Registration Fee', type: 'registration' as const, amount: 150, status: 'paid' as const, paidDate: '2026-03-15' },
-    { id: '2', title: 'April Monthly', type: 'monthly' as const, amount: 75, status: 'unpaid' as const, paidDate: null },
-    { id: '3', title: 'Spring Tournament', type: 'tournament' as const, amount: 45, status: 'unpaid' as const, paidDate: null },
-    { id: '4', title: 'Equipment Fee', type: 'equipment' as const, amount: 60, status: 'partial' as const, paidDate: null, paidAmount: 30 },
+    { id: '1', title: 'Spring Registration', type: 'registration' as const, amount: 175, status: 'paid' as const, paidDate: '2026-03-01' },
+    { id: '2', title: 'April Monthly Dues', type: 'monthly' as const, amount: 85, status: 'unpaid' as const, paidDate: null },
+    { id: '3', title: 'Seattle Spring Classic', type: 'tournament' as const, amount: 55, status: 'unpaid' as const, paidDate: null },
+    { id: '4', title: 'Warm-Up Jerseys', type: 'equipment' as const, amount: 45, status: 'partial' as const, paidDate: null, paidAmount: 20 },
   ],
 };
 

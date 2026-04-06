@@ -3,6 +3,7 @@
 import { teamConfig } from '@/lib/team-config';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 
 export function CTASection() {
@@ -10,14 +11,25 @@ export function CTASection() {
     <section className="relative py-32 md:py-40">
       <div className="max-w-[1400px] mx-auto px-6">
         <ScrollReveal>
-          <div className="relative rounded-3xl border border-border bg-surface overflow-hidden p-10 md:p-16">
+          <div className="relative rounded-3xl border border-border bg-surface overflow-hidden">
+            {/* Background image */}
+            <div className="absolute inset-0">
+              <Image
+                src="/ball-bg.png"
+                alt=""
+                fill
+                className="object-cover object-center opacity-20"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/95 to-surface/70" />
+            </div>
+
             {/* Glow */}
             <div
-              className="absolute top-0 right-0 w-1/2 h-full opacity-[0.06] blur-[100px]"
+              className="absolute top-0 right-0 w-1/2 h-full opacity-[0.08] blur-[100px]"
               style={{ background: teamConfig.accentColor }}
             />
 
-            <div className="relative max-w-xl">
+            <div className="relative p-10 md:p-16 max-w-xl">
               <h2 className="font-display text-3xl md:text-4xl tracking-tighter leading-none text-foreground mb-4">
                 Ready to pay your fees?
               </h2>

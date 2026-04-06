@@ -1,17 +1,17 @@
 {
-  "teamId": "smac-basketball",
-  "teamName": "SMAC Basketball",
+  "teamId": "emerald-city-elite",
+  "teamName": "Emerald City Elite",
   "sport": "basketball",
   "primaryColor": "#0A0A0A",
-  "accentColor": "#E63946",
-  "accentColorLight": "#FF6B6B",
-  "coachEmail": "",
-  "coachName": "",
-  "domain": "",
-  "firebaseProject": "",
+  "accentColor": "#2D6A4F",
+  "accentColorLight": "#52B788",
+  "coachEmail": "coach@emeraldcityelite.com",
+  "coachName": "Coach Davis",
+  "domain": "emeraldcityelite.com",
+  "firebaseProject": "genesis-elite-hoops",
   "stripeAccountId": "",
   "logoUrl": "/logo.png",
-  "tagline": "Train Hard. Play Smart. Win Together.",
+  "tagline": "Rise Above the Rest",
   "sportConfig": {
     "playerLabel": "Player",
     "playersLabel": "Players",
@@ -19,7 +19,7 @@
     "practiceLabel": "Practice",
     "gameLabel": "Game",
     "seasonLabel": "Season",
-    "positionOptions": ["Guard", "Forward", "Center"],
+    "positionOptions": ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
     "eventTypes": ["practice", "game", "tournament", "scrimmage"]
   }
 }
