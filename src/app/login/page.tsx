@@ -1,0 +1,159 @@
+'use client';
+
+import { useState } from 'react';
+import { teamConfig } from '@/lib/team-config';
+import Link from 'next/link';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
+
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password) return;
+    setLoading(true);
+    setError('');
+    // TODO: Firebase auth integration
+    setTimeout(() => {
+      setLoading(false);
+      setError('Authentication not yet configured. Set up Firebase credentials.');
+    }, 1000);
+  }
+
+  return (
+    <div className="min-h-[100dvh] flex">
+      {/* Left — brand panel */}
+      <div className="hidden lg:flex lg:w-[45%] relative items-end p-12">
+        <div className="absolute inset-0 bg-surface" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            background: `radial-gradient(ellipse at bottom right, ${teamConfig.accentColor}, transparent 70%)`,
+          }}
+        />
+        <div className="relative">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-display font-bold text-lg mb-8"
+            style={{ background: teamConfig.accentColor }}
+          >
+            {teamConfig.teamName.charAt(0)}
+          </div>
+          <h2 className="font-display text-3xl tracking-tighter leading-none text-foreground mb-3">
+            {teamConfig.teamName}
+          </h2>
+          <p className="text-sm text-text-secondary max-w-[30ch] leading-relaxed">
+            {teamConfig.tagline}
+          </p>
+          <div className="mt-12 pt-8 border-t border-border">
+            <p className="text-xs text-text-muted">
+              Powered by Forge612
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right — login form */}
+      <div className="flex-1 flex items-center justify-center p-6 md:p-12">
+        <div className="w-full max-w-sm">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs text-text-muted hover:text-foreground transition-colors mb-12"
+          >
+            <ArrowLeft size={14} />
+            Back to team page
+          </Link>
+
+          <div className="mb-8">
+            {/* Mobile only brand mark */}
+            <div
+              className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm mb-6"
+              style={{ background: teamConfig.accentColor }}
+            >
+              {teamConfig.teamName.charAt(0)}
+            </div>
+            <h1 className="font-display text-2xl tracking-tighter leading-none text-foreground mb-2">
+              {teamConfig.sportConfig.coachLabel} Login
+            </h1>
+            <p className="text-sm text-text-secondary">
+              Sign in to manage your team portal.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-xs font-medium text-text-secondary mb-1.5">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="coach@team.com"
+                autoComplete="email"
+                className="w-full px-4 py-3 bg-surface border border-border rounded-xl text-sm text-foreground placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors duration-300"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-xs font-medium text-text-secondary mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 bg-surface border border-border rounded-xl text-sm text-foreground placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors duration-300"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-text-muted hover:text-foreground transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-lg bg-error/10 border border-error/20 text-xs text-error">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading || !email || !password}
+              className="w-full py-3 rounded-xl text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: teamConfig.accentColor }}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Signing in
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button className="text-xs font-medium transition-colors hover:text-foreground" style={{ color: teamConfig.accentColor }}>
+              Forgot your password?
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

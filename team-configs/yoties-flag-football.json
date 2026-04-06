@@ -1,0 +1,25 @@
+{
+  "teamId": "yoties-flag-football",
+  "teamName": "Yoties Flag Football",
+  "sport": "flag-football",
+  "primaryColor": "#0A0A0A",
+  "accentColor": "#2D6A4F",
+  "accentColorLight": "#52B788",
+  "coachEmail": "",
+  "coachName": "",
+  "domain": "",
+  "firebaseProject": "",
+  "stripeAccountId": "",
+  "logoUrl": "/logo.png",
+  "tagline": "Flag On. Game On.",
+  "sportConfig": {
+    "playerLabel": "Player",
+    "playersLabel": "Players",
+    "coachLabel": "Coach",
+    "practiceLabel": "Practice",
+    "gameLabel": "Game",
+    "seasonLabel": "Season",
+    "positionOptions": ["Quarterback", "Wide Receiver", "Center", "Rusher", "Safety"],
+    "eventTypes": ["practice", "game", "tournament", "combine"]
+  }
+}

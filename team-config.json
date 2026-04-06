@@ -1,0 +1,25 @@
+{
+  "teamId": "smac-basketball",
+  "teamName": "SMAC Basketball",
+  "sport": "basketball",
+  "primaryColor": "#0A0A0A",
+  "accentColor": "#E63946",
+  "accentColorLight": "#FF6B6B",
+  "coachEmail": "",
+  "coachName": "",
+  "domain": "",
+  "firebaseProject": "",
+  "stripeAccountId": "",
+  "logoUrl": "/logo.png",
+  "tagline": "Train Hard. Play Smart. Win Together.",
+  "sportConfig": {
+    "playerLabel": "Player",
+    "playersLabel": "Players",
+    "coachLabel": "Coach",
+    "practiceLabel": "Practice",
+    "gameLabel": "Game",
+    "seasonLabel": "Season",
+    "positionOptions": ["Guard", "Forward", "Center"],
+    "eventTypes": ["practice", "game", "tournament", "scrimmage"]
+  }
+}
