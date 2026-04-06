@@ -14,10 +14,10 @@ export function HeroSection() {
           src="/hero-bg.png"
           alt=""
           fill
-          className="object-cover object-center opacity-30"
+          className="object-cover object-center opacity-60"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/60" />
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-background/30" />
         <div
           className="absolute top-0 right-0 w-[60%] h-[80%] opacity-[0.08] blur-[120px]"
           style={{ background: `radial-gradient(ellipse, ${teamConfig.accentColor}, transparent 70%)` }}

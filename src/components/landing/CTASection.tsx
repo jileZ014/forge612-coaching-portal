@@ -18,9 +18,9 @@ export function CTASection() {
                 src="/ball-bg.png"
                 alt=""
                 fill
-                className="object-cover object-center opacity-20"
+                className="object-cover object-center opacity-50"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-surface via-surface/95 to-surface/70" />
+              <div className="absolute inset-0 bg-gradient-to-r from-surface/90 via-surface/70 to-surface/40" />
             </div>
 
             {/* Glow */}
