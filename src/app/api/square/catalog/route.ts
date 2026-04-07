@@ -7,10 +7,11 @@ export async function GET() {
       types: 'ITEM',
     });
 
-    const items = (result.data || []).map(item => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const items = (result.data || []).map((item: any) => ({
       id: item.id,
       name: item.itemData?.name || '',
-      variations: (item.itemData?.variations || []).map(v => ({
+      variations: (item.itemData?.variations || []).map((v: any) => ({
         id: v.id,
         name: v.itemVariationData?.name || '',
         priceMoney: {

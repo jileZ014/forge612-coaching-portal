@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     const orderResult = await squareClient.orders.create({
       order: {
         locationId,
-        lineItems: orderLineItems,
+        lineItems: orderLineItems as any,
       },
       idempotencyKey: `order-${finalCustomerId}-${Date.now()}`,
     });

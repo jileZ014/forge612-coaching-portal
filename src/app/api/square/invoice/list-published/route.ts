@@ -32,9 +32,9 @@ export async function GET() {
     do {
       const result = await squareClient.invoices.list({ locationId, cursor });
       if (result.data) {
-        allInvoices = allInvoices.concat(result.data);
+        allInvoices = allInvoices.concat(result.data as any);
       }
-      cursor = result.cursor || undefined;
+      cursor = (result as any).cursor || undefined;
     } while (cursor);
 
     // Filter to UNPAID only

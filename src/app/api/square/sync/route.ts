@@ -60,9 +60,9 @@ export async function POST(request: NextRequest) {
         cursor,
       });
       if (result.data) {
-        allInvoices = allInvoices.concat(result.data);
+        allInvoices = allInvoices.concat(result.data as any);
       }
-      cursor = result.cursor || undefined;
+      cursor = (result as any).cursor || undefined;
     } while (cursor);
 
     // Categorize invoices
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           try {
             const orderResult = await squareClient.orders.get({ orderId: invoice.orderId });
             const lineItems = orderResult.order?.lineItems || [];
-            months = parseMonthsFromOrder(lineItems);
+            months = parseMonthsFromOrder(lineItems as any);
           } catch { /* fall back to createdAt */ }
         }
 
