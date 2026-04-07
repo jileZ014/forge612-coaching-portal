@@ -600,7 +600,7 @@ export default function DashboardPage() {
     } catch { /* clipboard may fail */ }
 
     const smsLink = document.createElement('a');
-    smsLink.href = `sms:${normalizedPhone}`;
+    smsLink.href = `sms:${normalizedPhone}?body=${encodeURIComponent(smsBody)}`;
     smsLink.click();
 
     // Save lastTexted
@@ -1627,7 +1627,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
 
     const normalizedPhone = current.phone.replace(/\D/g, '');
     const smsLink = document.createElement('a');
-    smsLink.href = `sms:${normalizedPhone}`;
+    smsLink.href = `sms:${normalizedPhone}?body=${encodeURIComponent(smsBody)}`;
     smsLink.click();
 
     setAwaitingNext(true);
