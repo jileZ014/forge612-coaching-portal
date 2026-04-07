@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { teamConfig } from '@/lib/team-config';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -13,16 +14,22 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const router = useRouter();
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
     setError('');
-    // TODO: Firebase auth integration
+    // TODO: Replace with Firebase auth
     setTimeout(() => {
-      setLoading(false);
-      setError('Authentication not yet configured. Set up Firebase credentials.');
-    }, 1000);
+      if (email === teamConfig.coachEmail && password === 'flight2026') {
+        router.push('/dashboard');
+      } else {
+        setLoading(false);
+        setError('Invalid email or password.');
+      }
+    }, 800);
   }
 
   return (
