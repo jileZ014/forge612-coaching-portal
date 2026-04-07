@@ -3,8 +3,8 @@
 
 :root {
   --ease-out-expo: cubic-bezier(0.32, 0.72, 0, 1);
-  --team-accent: #d4a843;
-  --team-accent-light: #e8c872;
+  --team-accent: #E8632A;
+  --team-accent-light: #F0845A;
 }
 
 @theme inline {
@@ -16,8 +16,8 @@
   --color-border-hover: rgba(255, 255, 255, 0.12);
   --color-text-muted: #71717A;
   --color-text-secondary: #A1A1AA;
-  --color-accent: #d4a843;
-  --color-accent-light: #e8c872;
+  --color-accent: #E8632A;
+  --color-accent-light: #F0845A;
   --color-success: #22C55E;
   --color-warning: #F59E0B;
   --color-error: #EF4444;
