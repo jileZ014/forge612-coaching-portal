@@ -100,11 +100,28 @@ export async function POST(request: NextRequest) {
       };
     });
 
-    // Create order first (required for invoice with line items)
+    // Calculate processing fee (3.2% to cover Square's 2.9% + $0.30)
+    const subtotalCents = orderLineItems.reduce((sum, item) => {
+      return sum + Number(item.basePriceMoney.amount) * Number(item.quantity);
+    }, 0);
+    const processingFeeCents = BigInt(Math.round(subtotalCents * 0.032));
+
+    // Create order with processing fee passed to parent
     const orderResult = await squareClient.orders.create({
       order: {
         locationId,
         lineItems: orderLineItems as any,
+        serviceCharges: [
+          {
+            name: 'Processing Fee',
+            amountMoney: {
+              amount: processingFeeCents,
+              currency: 'USD',
+            },
+            calculationPhase: 'SUBTOTAL_PHASE',
+            taxable: false,
+          },
+        ] as any,
       },
       idempotencyKey: `order-${finalCustomerId}-${Date.now()}`,
     });
