@@ -1,0 +1,48 @@
+[debug] [2026-04-07T13:23:19.036Z] ----------------------------------------------------------------------
+[debug] [2026-04-07T13:23:19.037Z] Command:       C:\Users\jange\AppData\Local\fnm_multishells\62604_1775568194184\node.exe C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js --project flight-pay-az --debug
+[debug] [2026-04-07T13:23:19.037Z] CLI Version:   15.1.0
+[debug] [2026-04-07T13:23:19.037Z] Platform:      win32
+[debug] [2026-04-07T13:23:19.038Z] Node Version:  v22.22.0
+[debug] [2026-04-07T13:23:19.038Z] Time:          Tue Apr 07 2026 06:23:19 GMT-0700 (Mountain Standard Time)
+[debug] [2026-04-07T13:23:19.038Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-07T13:23:19.039Z] TypeError: Cannot read properties of undefined (reading '0')
+    at Command.<anonymous> (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\lib\index.js:78:21)
+    at Command.listener [as _actionHandler] (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\commander\index.js:413:31)
+    at Command._parseCommand (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\commander\index.js:914:14)
+    at Command.parse (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\commander\index.js:717:10)
+    at cli (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\cli.js:123:26)
+    at Object.<anonymous> (C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js:17:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Object..js (node:internal/modules/cjs/loader:1839:10)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function._load (node:internal/modules/cjs/loader:1263:12)
+[error] 
+[error] Error: An unexpected error has occurred.
+[debug] [2026-04-07T13:23:27.421Z] ----------------------------------------------------------------------
+[debug] [2026-04-07T13:23:27.422Z] Command:       C:\Users\jange\AppData\Local\fnm_multishells\66576_1775568205570\node.exe C:\Users\jange\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js --project flight-pay-az --debug firestore:indexes
+[debug] [2026-04-07T13:23:27.423Z] CLI Version:   15.1.0
+[debug] [2026-04-07T13:23:27.423Z] Platform:      win32
+[debug] [2026-04-07T13:23:27.423Z] Node Version:  v22.22.0
+[debug] [2026-04-07T13:23:27.423Z] Time:          Tue Apr 07 2026 06:23:27 GMT-0700 (Mountain Standard Time)
+[debug] [2026-04-07T13:23:27.423Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-04-07T13:23:28.151Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-04-07T13:23:28.152Z] > authorizing via signed-in user (jangeles014@gmail.com)
+[debug] [2026-04-07T13:23:28.152Z] [iam] checking project flight-pay-az for permissions ["datastore.indexes.list","firebase.projects.get"]
+[debug] [2026-04-07T13:23:28.152Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.153Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.153Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/flight-pay-az:testIamPermissions [none]
+[debug] [2026-04-07T13:23:28.153Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/flight-pay-az:testIamPermissions x-goog-quota-user=projects/flight-pay-az
+[debug] [2026-04-07T13:23:28.153Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/flight-pay-az:testIamPermissions {"permissions":["datastore.indexes.list","firebase.projects.get"]}
+[debug] [2026-04-07T13:23:28.448Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/flight-pay-az:testIamPermissions 200
+[debug] [2026-04-07T13:23:28.448Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/flight-pay-az:testIamPermissions {"permissions":["datastore.indexes.list","firebase.projects.get"]}
+[debug] [2026-04-07T13:23:28.448Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.449Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.449Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/flight-pay-az/databases/(default)/collectionGroups/-/indexes [none]
+[debug] [2026-04-07T13:23:28.615Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/flight-pay-az/databases/(default)/collectionGroups/-/indexes 200
+[debug] [2026-04-07T13:23:28.615Z] <<< [apiv2][body] GET https://firestore.googleapis.com/v1/projects/flight-pay-az/databases/(default)/collectionGroups/-/indexes {}
+[debug] [2026-04-07T13:23:28.615Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.615Z] Checked if tokens are valid: true, expires at: 1775570959864
+[debug] [2026-04-07T13:23:28.615Z] >>> [apiv2][query] GET https://firestore.googleapis.com/v1/projects/flight-pay-az/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* [none]
+[debug] [2026-04-07T13:23:28.685Z] <<< [apiv2][status] GET https://firestore.googleapis.com/v1/projects/flight-pay-az/databases/(default)/collectionGroups/-/fields?filter=indexConfig.usesAncestorConfig=false OR ttlConfig:* 200

@@ -1,0 +1,49 @@
+rules_version = '2';
+// Deployed 2026-04-07 — parents collection open for Flight_Pay dashboard
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Parents collection — used by Flight_Pay dashboard (flat collection)
+    // TODO: Add coach auth once login is implemented
+    match /parents/{parentId} {
+      allow read, write: if true;
+    }
+
+    // Helper: check if the authenticated user is the coach for this team
+    function isCoach(teamId) {
+      return request.auth != null &&
+        request.auth.token.email == get(/databases/$(database)/documents/teams/$(teamId)).data.coachEmail;
+    }
+
+    // Team document — public read for team info, coach write
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if isCoach(teamId);
+    }
+
+    // Players — public read (for pay page lookup via client), coach write
+    match /teams/{teamId}/players/{playerId} {
+      allow read: if true;
+      allow write: if isCoach(teamId);
+    }
+
+    // Fees — public read (for pay page), coach write
+    match /teams/{teamId}/fees/{feeId} {
+      allow read: if true;
+      allow write: if isCoach(teamId);
+    }
+
+    // Payments — public read (for pay page lookup), coach write
+    match /teams/{teamId}/payments/{paymentId} {
+      allow read: if true;
+      allow write: if isCoach(teamId);
+    }
+
+    // Schedule — public read, coach write
+    match /teams/{teamId}/schedule/{eventId} {
+      allow read: if true;
+      allow write: if isCoach(teamId);
+    }
+  }
+}

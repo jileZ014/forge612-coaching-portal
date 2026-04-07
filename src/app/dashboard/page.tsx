@@ -871,13 +871,13 @@ export default function DashboardPage() {
                             <td className="px-3 py-3.5 text-center">
                               {unpaidExtras.length > 0 ? (
                                 <button onClick={() => setAddChargeModal(parent)}
-                                  className="text-xs text-warning hover:text-yellow-300 transition-colors">
-                                  {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} - ${extrasTotal}
+                                  className="text-xs font-medium text-warning hover:text-yellow-300 transition-colors px-2 py-1 rounded-lg bg-warning/10 border border-warning/20 hover:bg-warning/20">
+                                  {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} — ${extrasTotal}
                                 </button>
                               ) : (
                                 <button onClick={() => setAddChargeModal(parent)}
-                                  className="text-xs text-text-muted hover:text-text-secondary transition-colors">
-                                  +
+                                  className="text-xs font-medium text-text-secondary hover:text-foreground transition-colors px-2 py-1 rounded-lg bg-surface-elevated border border-border hover:bg-border">
+                                  + Add
                                 </button>
                               )}
                             </td>
