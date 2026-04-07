@@ -26,8 +26,24 @@ if [ -f "$GLOBAL_STATE" ]; then
   fi
 fi
 
-# Next.js with API routes needs --build flag (Netlify builds + deploys with Next.js runtime)
-npx netlify deploy --build --prod --site="${NETLIFY_SITE_ID}"
+# Build with webpack (Turbopack chunk names cause issues on Netlify CDN)
+echo ">>> Building..."
+npm run build
+
+# Copy static files to _next path (Netlify plugin onPostBuild fails on Windows)
+echo ">>> Fixing static asset paths..."
+rm -rf .next/_next
+mkdir -p .next/_next
+cp -r .next/static .next/_next/static
+
+# Regenerate Netlify server function from webpack build
+echo ">>> Regenerating server function..."
+rm -rf .netlify/functions-internal .netlify/edge-functions .netlify/blobs
+npx netlify deploy --prod --site="${NETLIFY_SITE_ID}" 2>&1 | grep -v "^$" | tail -5 || true
+
+# Deploy pre-built output (--no-build to skip broken Windows plugin)
+echo ">>> Deploying to Netlify..."
+npx netlify deploy --prod --no-build --site="${NETLIFY_SITE_ID}"
 
 echo ""
 echo "Deploy complete! Verify at: https://${EXPECTED_DOMAIN}"
