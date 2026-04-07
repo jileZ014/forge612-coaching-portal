@@ -50,6 +50,7 @@ const METHOD_BADGES: Record<string, { label: string; bg: string; text: string }>
   zelle: { label: 'Zelle', bg: 'bg-purple-500/20', text: 'text-purple-400' },
   cash: { label: 'Cash', bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
   check: { label: 'Check', bg: 'bg-yellow-500/20', text: 'text-yellow-400' },
+  forgive: { label: 'Forgive', bg: 'bg-pink-500/20', text: 'text-pink-400' },
 };
 
 const METHOD_SHORT: Record<string, { label: string; color: string }> = {
@@ -57,6 +58,7 @@ const METHOD_SHORT: Record<string, { label: string; color: string }> = {
   zelle: { label: 'Z', color: 'bg-purple-600' },
   cash: { label: 'C', color: 'bg-emerald-600' },
   check: { label: 'Ch', color: 'bg-yellow-600' },
+  forgive: { label: 'F', color: 'bg-pink-600' },
 };
 
 const STATUS_COLORS: Record<ParentStatus, { bg: string; text: string; label: string; dot: string }> = {
@@ -849,7 +851,7 @@ export default function DashboardPage() {
                                       </button>
                                       {isDropdownOpen && (
                                         <div className="absolute z-20 top-11 left-1/2 -translate-x-1/2 bg-surface-elevated rounded-xl shadow-2xl border border-border py-1.5 min-w-[130px]">
-                                          {(['square', 'zelle', 'cash', 'check'] as PaymentMethod[]).map(m => (
+                                          {(['square', 'zelle', 'cash', 'check', 'forgive'] as PaymentMethod[]).map(m => (
                                             <button key={m} onClick={() => markPayment(parent.id, col.key, m)}
                                               className={`block w-full text-left px-4 py-2 text-sm font-medium ${METHOD_BADGES[m].text} hover:bg-surface transition-colors capitalize`}>
                                               {m}
@@ -1289,7 +1291,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                 </div>
                 {item.status !== 'paid' && (
                   <div className="flex gap-1">
-                    {(['square', 'zelle', 'cash'] as PaymentMethod[]).map(m => (
+                    {(['square', 'zelle', 'cash', 'forgive'] as PaymentMethod[]).map(m => (
                       <button key={m} onClick={() => onMarkPaid(item.id, m)}
                         className={`px-2 py-1 rounded-lg text-xs capitalize transition-colors ${METHOD_BADGES[m].bg} ${METHOD_BADGES[m].text} hover:brightness-125`}>
                         {m}

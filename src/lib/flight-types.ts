@@ -10,7 +10,7 @@ export interface Player {
 
 export type ParentStatus = 'active' | 'on_break' | 'exempt' | 'inactive';
 export type RateType = 'regular' | 'siblings' | 'special' | 'custom';
-export type PaymentMethod = 'square' | 'zelle' | 'cash' | 'check';
+export type PaymentMethod = 'square' | 'zelle' | 'cash' | 'check' | 'forgive';
 export type Team = '9u/10u/11u' | '12u/13u' | '14u';
 export const TEAMS: Team[] = ['9u/10u/11u', '12u/13u', '14u'];
 
