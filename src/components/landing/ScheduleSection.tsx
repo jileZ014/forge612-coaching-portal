@@ -5,12 +5,12 @@ import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { MapPin, Clock } from 'lucide-react';
 
 const sampleEvents = [
-  { id: '1', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-07', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
-  { id: '2', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-09', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
-  { id: '3', title: `${teamConfig.sportConfig.gameLabel} vs Tacoma Thunder`, date: '2026-04-12', startTime: '10:00', endTime: '11:30', location: 'Seattle Pacific University Gym', type: 'game' },
-  { id: '4', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-14', startTime: '18:00', endTime: '19:30', location: 'Rainier Beach Community Center', type: 'practice' },
-  { id: '5', title: 'Seattle Spring Classic', date: '2026-04-19', startTime: '08:00', endTime: '18:00', location: 'Showare Center, Kent', type: 'tournament' },
-  { id: '6', title: `${teamConfig.sportConfig.gameLabel} vs Bellevue Ballers`, date: '2026-04-16', startTime: '19:00', endTime: '20:30', location: 'Bellevue College Gym', type: 'game' },
+  { id: '1', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-07', startTime: '18:00', endTime: '19:30', location: 'Scottsdale Boys & Girls Club', type: 'practice' },
+  { id: '2', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-09', startTime: '18:00', endTime: '19:30', location: 'Scottsdale Boys & Girls Club', type: 'practice' },
+  { id: '3', title: `${teamConfig.sportConfig.gameLabel} vs AZ Monstarz`, date: '2026-04-12', startTime: '10:00', endTime: '11:30', location: 'Arizona Sports Complex, Mesa', type: 'game' },
+  { id: '4', title: `${teamConfig.sportConfig.practiceLabel}`, date: '2026-04-14', startTime: '18:00', endTime: '19:30', location: 'Scottsdale Boys & Girls Club', type: 'practice' },
+  { id: '5', title: 'PHX Desert Classic', date: '2026-04-19', startTime: '08:00', endTime: '18:00', location: 'Arizona Sports Complex, Mesa', type: 'tournament' },
+  { id: '6', title: `${teamConfig.sportConfig.gameLabel} vs West Valley Warriors`, date: '2026-04-16', startTime: '19:00', endTime: '20:30', location: 'Peoria Community Center', type: 'game' },
 ];
 
 function formatDate(dateStr: string) {

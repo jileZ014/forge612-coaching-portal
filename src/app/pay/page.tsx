@@ -11,11 +11,11 @@ type LookupState = 'idle' | 'loading' | 'results' | 'error' | 'success';
 
 // Demo data for development
 const demoResults = {
-  playerName: 'Jaylen Carter',
+  playerName: 'Marcus Thompson',
   fees: [
     { id: '1', title: 'Spring Registration', type: 'registration' as const, amount: 175, status: 'paid' as const, paidDate: '2026-03-01' },
     { id: '2', title: 'April Monthly Dues', type: 'monthly' as const, amount: 85, status: 'unpaid' as const, paidDate: null },
-    { id: '3', title: 'Seattle Spring Classic', type: 'tournament' as const, amount: 55, status: 'unpaid' as const, paidDate: null },
+    { id: '3', title: 'PHX Desert Classic', type: 'tournament' as const, amount: 55, status: 'unpaid' as const, paidDate: null },
     { id: '4', title: 'Warm-Up Jerseys', type: 'equipment' as const, amount: 45, status: 'partial' as const, paidDate: null, paidAmount: 20 },
   ],
 };

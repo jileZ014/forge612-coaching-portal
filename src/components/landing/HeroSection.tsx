@@ -93,7 +93,7 @@ export function HeroSection() {
                   <div className="space-y-3">
                     <ScheduleRow day="Mon" date="Apr 7" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
                     <ScheduleRow day="Wed" date="Apr 9" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
-                    <ScheduleRow day="Sat" date="Apr 12" label={`${teamConfig.sportConfig.gameLabel} vs Thunder`} time="10:00 AM" accent />
+                    <ScheduleRow day="Sat" date="Apr 12" label={`${teamConfig.sportConfig.gameLabel} vs Monstarz`} time="10:00 AM" accent />
                   </div>
                 </FloatingCard>
               </div>
@@ -110,7 +110,7 @@ export function HeroSection() {
                   <div className="space-y-3">
                     <PaymentRow label="Spring Registration" amount="$175" status="paid" />
                     <PaymentRow label="April Monthly Dues" amount="$85" status="unpaid" />
-                    <PaymentRow label="Spring Classic Entry" amount="$55" status="unpaid" />
+                    <PaymentRow label="PHX Desert Classic" amount="$55" status="unpaid" />
                   </div>
                 </FloatingCard>
               </div>
