@@ -26,22 +26,19 @@ if [ -f "$GLOBAL_STATE" ]; then
   fi
 fi
 
-# Build with webpack (Turbopack chunk names cause issues on Netlify CDN)
-echo ">>> Building..."
+# Build with webpack (Turbopack chunk names cause MIME issues on Netlify CDN)
+echo ">>> Building with webpack..."
 npm run build
 
-# Copy static files to _next path (Netlify plugin onPostBuild fails on Windows)
-echo ">>> Fixing static asset paths..."
+# Copy static files + public assets into .next for Netlify CDN
+# (Netlify plugin onPostBuild fails on Windows, so we do this manually)
+echo ">>> Preparing static assets..."
 rm -rf .next/_next
 mkdir -p .next/_next
 cp -r .next/static .next/_next/static
+cp -r public/* .next/
 
-# Regenerate Netlify server function from webpack build
-echo ">>> Regenerating server function..."
-rm -rf .netlify/functions-internal .netlify/edge-functions .netlify/blobs
-npx netlify deploy --prod --site="${NETLIFY_SITE_ID}" 2>&1 | grep -v "^$" | tail -5 || true
-
-# Deploy pre-built output (--no-build to skip broken Windows plugin)
+# Deploy pre-built output (--no-build skips the broken Windows plugin)
 echo ">>> Deploying to Netlify..."
 npx netlify deploy --prod --no-build --site="${NETLIFY_SITE_ID}"
 
