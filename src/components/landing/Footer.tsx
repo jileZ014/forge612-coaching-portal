@@ -1,5 +1,6 @@
 import { teamConfig } from '@/lib/team-config';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -7,12 +8,12 @@ export function Footer() {
       <div className="max-w-[1400px] mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-3">
-            <div
-              className="w-7 h-7 rounded-md flex items-center justify-center text-white font-display font-bold text-xs"
-              style={{ background: teamConfig.accentColor }}
-            >
-              {teamConfig.teamName.charAt(0)}
-            </div>
+            <Image
+              src={teamConfig.logoUrl}
+              alt={teamConfig.teamName}
+              width={28}
+              height={28}
+            />
             <span className="text-sm text-text-muted">
               {teamConfig.teamName}
             </span>

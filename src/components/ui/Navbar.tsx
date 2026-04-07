@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { teamConfig } from '@/lib/team-config';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
 
 export function Navbar() {
@@ -32,12 +33,13 @@ export function Navbar() {
       >
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm transition-transform duration-300 group-hover:scale-105 group-active:scale-95"
-              style={{ background: teamConfig.accentColor }}
-            >
-              {teamConfig.teamName.charAt(0)}
-            </div>
+            <Image
+              src={teamConfig.logoUrl}
+              alt={teamConfig.teamName}
+              width={40}
+              height={40}
+              className="transition-transform duration-300 group-hover:scale-105 group-active:scale-95"
+            />
             <span className="font-display font-semibold text-lg tracking-tight text-foreground">
               {teamConfig.teamName}
             </span>

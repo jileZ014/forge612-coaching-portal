@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { teamConfig } from '@/lib/team-config';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 export default function LoginPage() {
@@ -36,12 +37,13 @@ export default function LoginPage() {
           }}
         />
         <div className="relative">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-display font-bold text-lg mb-8"
-            style={{ background: teamConfig.accentColor }}
-          >
-            {teamConfig.teamName.charAt(0)}
-          </div>
+          <Image
+            src={teamConfig.logoUrl}
+            alt={teamConfig.teamName}
+            width={64}
+            height={64}
+            className="mb-8"
+          />
           <h2 className="font-display text-3xl tracking-tighter leading-none text-foreground mb-3">
             {teamConfig.teamName}
           </h2>
@@ -69,12 +71,13 @@ export default function LoginPage() {
 
           <div className="mb-8">
             {/* Mobile only brand mark */}
-            <div
-              className="lg:hidden w-10 h-10 rounded-lg flex items-center justify-center text-white font-display font-bold text-sm mb-6"
-              style={{ background: teamConfig.accentColor }}
-            >
-              {teamConfig.teamName.charAt(0)}
-            </div>
+            <Image
+              src={teamConfig.logoUrl}
+              alt={teamConfig.teamName}
+              width={48}
+              height={48}
+              className="lg:hidden mb-6"
+            />
             <h1 className="font-display text-2xl tracking-tighter leading-none text-foreground mb-2">
               {teamConfig.sportConfig.coachLabel} Login
             </h1>
