@@ -134,7 +134,7 @@ export default function FamiliesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, phone, tags, notes…"
-            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none bg-white"
+            className="w-full pl-10 pr-4 py-2.5 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 bg-white"
           />
         </div>
 

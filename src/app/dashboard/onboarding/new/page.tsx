@@ -189,7 +189,7 @@ export default function NewFamilyOnboardingPage() {
                   required
                   value={primaryParentName}
                   onChange={(e) => setPrimaryParentName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
               <Field label="Email *">
@@ -198,7 +198,7 @@ export default function NewFamilyOnboardingPage() {
                   type="email"
                   value={primaryParentEmail}
                   onChange={(e) => setPrimaryParentEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
               <Field label="Phone *">
@@ -208,7 +208,7 @@ export default function NewFamilyOnboardingPage() {
                   value={primaryParentPhone}
                   onChange={(e) => setPrimaryParentPhone(e.target.value)}
                   placeholder="(602) 555-1234"
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
             </div>
@@ -223,7 +223,7 @@ export default function NewFamilyOnboardingPage() {
                 <input
                   value={secondaryParentName}
                   onChange={(e) => setSecondaryParentName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
               <Field label="Email">
@@ -231,7 +231,7 @@ export default function NewFamilyOnboardingPage() {
                   type="email"
                   value={secondaryParentEmail}
                   onChange={(e) => setSecondaryParentEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
               <Field label="Phone">
@@ -239,7 +239,7 @@ export default function NewFamilyOnboardingPage() {
                   type="tel"
                   value={secondaryParentPhone}
                   onChange={(e) => setSecondaryParentPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </Field>
             </div>
@@ -263,20 +263,20 @@ export default function NewFamilyOnboardingPage() {
                   value={p.name}
                   onChange={(e) => updatePlayer(idx, { name: e.target.value })}
                   placeholder="Player name *"
-                  className="md:col-span-2 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="md:col-span-2 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
                 <input
                   value={p.position}
                   onChange={(e) => updatePlayer(idx, { position: e.target.value })}
                   placeholder="Position"
-                  className="px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
                 <input
                   type="number"
                   value={p.birthYear}
                   onChange={(e) => updatePlayer(idx, { birthYear: e.target.value })}
                   placeholder="Birth year"
-                  className="px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
                 <div className="flex gap-2">
                   <input
@@ -284,7 +284,7 @@ export default function NewFamilyOnboardingPage() {
                     value={p.graduationYear}
                     onChange={(e) => updatePlayer(idx, { graduationYear: e.target.value })}
                     placeholder="Grad yr"
-                    className="flex-1 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                    className="flex-1 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                   />
                   {players.length > 1 && (
                     <button
@@ -300,7 +300,7 @@ export default function NewFamilyOnboardingPage() {
                   value={p.school}
                   onChange={(e) => updatePlayer(idx, { school: e.target.value })}
                   placeholder="School"
-                  className="md:col-span-5 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                  className="md:col-span-5 px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
               </div>
             ))}
@@ -313,7 +313,7 @@ export default function NewFamilyOnboardingPage() {
                 <select
                   value={stage}
                   onChange={(e) => setStage(e.target.value as LifecycleStage)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 bg-white"
                 >
                   {LIFECYCLE_STAGES.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -324,7 +324,7 @@ export default function NewFamilyOnboardingPage() {
                 <select
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none bg-white"
+                  className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 bg-white"
                 >
                   {SOURCE_OPTIONS.map((s) => (
                     <option key={s} value={s}>{s}</option>
@@ -337,7 +337,7 @@ export default function NewFamilyOnboardingPage() {
                 value={tagsRaw}
                 onChange={(e) => setTagsRaw(e.target.value)}
                 placeholder="needs-financial-aid, transfer-from-X, 8th-grade-2027"
-                className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
               />
             </Field>
             <Field label="Notes" className="mt-4">
@@ -346,7 +346,7 @@ export default function NewFamilyOnboardingPage() {
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Anything you want future-you to remember about this family"
-                className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none"
+                className="w-full px-3 py-2 rounded-md border border-slate-200 focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
               />
             </Field>
           </section>

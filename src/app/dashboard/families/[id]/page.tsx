@@ -320,7 +320,7 @@ export default function FamilyHubPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addTag()}
                   placeholder="Add a tag (e.g. needs-financial-aid)"
-                  className="flex-1 px-3 py-1.5 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none"
+                  className="flex-1 px-3 py-1.5 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
                 />
                 <button
                   onClick={addTag}
@@ -342,7 +342,7 @@ export default function FamilyHubPage() {
                 placeholder={`Message to ${family.primaryParentName.split(' ')[0]}…`}
                 rows={4}
                 disabled={family.doNotContact}
-                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
               />
               <div className="flex items-center justify-between mt-3">
                 <button
@@ -370,7 +370,7 @@ export default function FamilyHubPage() {
                 onChange={(e) => setNoteSummary(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveNote()}
                 placeholder='e.g. "Called about July tournament — left voicemail"'
-                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none mb-3"
+                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 mb-3"
               />
               <button
                 onClick={saveNote}

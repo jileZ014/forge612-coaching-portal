@@ -1522,35 +1522,35 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
-              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
             <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
-              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
           </div>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
             <select value={team} onChange={e => setTeam(e.target.value as Team)}
-              className="bg-gray-700 rounded px-3 py-2 text-sm">
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
-              className="bg-gray-700 rounded px-3 py-2 text-sm">
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
               <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
-                className="bg-gray-700 rounded px-3 py-2 text-sm" />
+                className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
             )}
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={2} />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-between mt-6">
           <button onClick={onDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition">Delete</button>
@@ -1605,35 +1605,35 @@ function AddFamilyModal({ onClose, onSave }: {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
-              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
             <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
-              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
           </div>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
             <select value={team} onChange={e => setTeam(e.target.value as Team)}
-              className="bg-gray-700 rounded px-3 py-2 text-sm">
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
-              className="bg-gray-700 rounded px-3 py-2 text-sm">
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
               <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
-                className="bg-gray-700 rounded px-3 py-2 text-sm" />
+                className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
             )}
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={2} />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
@@ -1729,7 +1729,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   }
                 }
               }}
-              className="bg-gray-700 rounded px-3 py-2 text-sm w-full">
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full">
               <option value="">Select from Square catalog (optional)</option>
               {catalogItems.map(item => (
                 <option key={item.id} value={item.id}>{item.name}</option>
@@ -1744,7 +1744,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   const variation = item?.variations.find(v => v.id === varId);
                   if (variation) setAmount(variation.priceMoney.amount);
                 }}
-                className="bg-gray-700 rounded px-3 py-2 text-sm w-full">
+                className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full">
                 <option value="">Select variation</option>
                 {catalogItems.find(ci => ci.id === catalogItemId)?.variations.map(v => (
                   <option key={v.id} value={v.id}>{v.name} — ${v.priceMoney.amount}</option>
@@ -1752,9 +1752,9 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
               </select>
             )}
             <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (e.g., Uniform)"
-              className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
             <input type="number" value={amount || ''} onChange={e => setAmount(Number(e.target.value))} placeholder="Amount"
-              className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
             <div className="flex gap-2">
               <button onClick={() => setShowAdd(false)} className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
               <button onClick={handleSave} disabled={saving || !description || amount <= 0}
@@ -1947,14 +1947,14 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-300 block mb-1">Due Date</label>
           <input type="date" value={dueDate} onChange={e => handleDueDateChange(e.target.value)}
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
         </div>
 
         {/* Message */}
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-300 block mb-1">Message</label>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
-            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={4} />
+            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={4} />
         </div>
 
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}

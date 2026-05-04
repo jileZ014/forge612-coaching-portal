@@ -37,6 +37,17 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Form-field safety net: body color is near-white (#FAFAFA) for the dark
+   marketing/dashboard pages, but the CRM v0 forms use light backgrounds.
+   Without this, inputs render white-on-white. Tailwind classes can still
+   override (e.g. dashboard's `bg-gray-700` inputs need `text-white`). */
+input, textarea, select {
+  color: #0F172A; /* slate-900 */
+}
+input::placeholder, textarea::placeholder {
+  color: #94A3B8; /* slate-400 */
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
