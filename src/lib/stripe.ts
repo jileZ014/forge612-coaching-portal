@@ -28,17 +28,27 @@ export function toE164(phone: string): string {
 }
 
 // Build a Stripe Customer payload from a Parent record.
+// Many AZ Flight parents have no email on file (phone-only families). Stripe's
+// `collection_method: 'send_invoice'` requires an email on the Customer at
+// invoice-create time. We use a non-deliverable placeholder so the invoice can
+// be created and the hosted_invoice_url generated; we deliver via Twilio SMS,
+// not Stripe email, so the placeholder never receives mail.
+function placeholderEmail(parentId: string): string {
+  return `invoice+${parentId}@azflighthoops.com`;
+}
+
 // Includes Firestore parentId + month metadata so webhooks can route back.
 export function customerPayloadFromParent(parent: Parent): Stripe.CustomerCreateParams {
   return {
     name: `${parent.firstName} ${parent.lastName}`.trim(),
-    email: parent.email ?? undefined,
+    email: parent.email ?? placeholderEmail(parent.id),
     phone: toE164(parent.phone),
     metadata: {
       firestoreParentId: parent.id,
       legacySquareCustomerId: parent.squareCustomerId ?? '',
       team: parent.team ?? '',
       players: (parent.playerNames ?? []).join(', ').slice(0, 500),
+      placeholderEmail: parent.email ? 'false' : 'true',
     },
   };
 }
@@ -47,12 +57,37 @@ export function customerPayloadFromParent(parent: Parent): Stripe.CustomerCreate
 export async function ensureStripeCustomer(parent: Parent): Promise<Stripe.Customer> {
   const stripe = getStripe();
 
+  // Email needs patching if missing OR points at an obsolete placeholder TLD
+  // (`.local` is reserved special-use; Stripe accepts the format on customer
+  // create but rejects it at invoice-create with `send_invoice` collection).
+  const needsEmailPatch = (c: Stripe.Customer): boolean => {
+    if (!c.email) return true;
+    if (c.email.endsWith('.local')) return true;
+    // If parent now has a real email but customer still has placeholder, refresh.
+    if (parent.email && c.email !== parent.email) return true;
+    return false;
+  };
+
+  const patchCustomer = async (c: Stripe.Customer): Promise<Stripe.Customer> => {
+    return await stripe.customers.update(c.id, {
+      email: parent.email ?? placeholderEmail(parent.id),
+      phone: toE164(parent.phone),
+      name: `${parent.firstName} ${parent.lastName}`.trim() || c.name || undefined,
+      metadata: {
+        ...c.metadata,
+        firestoreParentId: parent.id,
+        placeholderEmail: parent.email ? 'false' : 'true',
+      },
+    });
+  };
+
   // 1) If we already have a Stripe Customer ID, fetch and verify it still exists.
   if (parent.stripeCustomerId) {
     try {
       const existing = await stripe.customers.retrieve(parent.stripeCustomerId);
       if (!('deleted' in existing) || !existing.deleted) {
-        return existing as Stripe.Customer;
+        const c = existing as Stripe.Customer;
+        return needsEmailPatch(c) ? await patchCustomer(c) : c;
       }
     } catch {
       // fall through to search/create
@@ -64,7 +99,10 @@ export async function ensureStripeCustomer(parent: Parent): Promise<Stripe.Custo
     query: `metadata['firestoreParentId']:'${parent.id}'`,
     limit: 1,
   });
-  if (search.data.length > 0) return search.data[0];
+  if (search.data.length > 0) {
+    const c = search.data[0];
+    return needsEmailPatch(c) ? await patchCustomer(c) : c;
+  }
 
   // 3) Create new
   return await stripe.customers.create(customerPayloadFromParent(parent));
@@ -106,6 +144,11 @@ export async function createMonthlyInvoice(opts: {
   amountUsd?: number; // overrides parent.monthlyRate if provided
   daysUntilDue?: number;
   autoSendEmail?: boolean;
+  // Caller increments this each time it voids a prior open invoice for this
+  // parent+month, so the idempotency key here changes after a void. Without
+  // this, the cached "draft created" response from Stripe gets replayed and
+  // we try to re-finalize an already-voided invoice — Stripe rejects.
+  voidedPriorCount?: number;
 }): Promise<{
   invoice: Stripe.Invoice;
   hostedUrl: string;
@@ -116,11 +159,21 @@ export async function createMonthlyInvoice(opts: {
   const amount = opts.amountUsd ?? computeMonthAmountUsd(opts.parent);
   if (amount <= 0) throw new Error(`No amount due for ${opts.parent.id} (${opts.month})`);
 
-  // Idempotency key: parent + month + amount → safe to retry, won't double-create
-  const idempotencyKey = `inv_${opts.parent.id}_${opts.month}_${Math.round(amount * 100)}`;
+  // Idempotency: scope to THIS function invocation only. The 3 sub-calls
+  // (create + items + finalize) share one key so internal retries within
+  // a single request are safe. Cross-request de-dup is handled by the
+  // caller via voidOpenInvoicesForParentMonth before this function runs.
+  // (Earlier we baked parent+month+amount into the key for cross-request
+  // idempotency, but that fights with the void-and-recreate flow: Stripe
+  // replays a cached create response describing an invoice that has since
+  // been voided, breaking the next finalize. Per-invocation key avoids it.)
+  const requestId = (typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 16);
+  const idempotencyKey = `inv_${opts.parent.id}_${opts.month}_${Math.round(amount * 100)}_${requestId}`;
 
   // 1) Create draft invoice (idempotent)
-  const draft = await stripe.invoices.create(
+  const draftCached = await stripe.invoices.create(
     {
       customer: customer.id,
       collection_method: 'send_invoice',
@@ -135,6 +188,21 @@ export async function createMonthlyInvoice(opts: {
     },
     { idempotencyKey: `${idempotencyKey}_draft` },
   );
+
+  // Idempotency may return the ORIGINAL response — which says status='draft'
+  // even if the actual invoice has since been finalized. Refresh the live
+  // state so we don't try to re-finalize an already-open invoice.
+  const draft = await stripe.invoices.retrieve(draftCached.id);
+  if (draft.status === 'open' || draft.status === 'paid') {
+    if (!draft.hosted_invoice_url) {
+      throw new Error(`Stripe invoice ${draft.id} is ${draft.status} but has no hosted_invoice_url`);
+    }
+    return {
+      invoice: draft,
+      hostedUrl: draft.hosted_invoice_url,
+      customerId: customer.id,
+    };
+  }
 
   // 2) Add line item — if this fails, void the draft so we don't leave a $0 invoice that
   //    could later be finalized (BLOCKER 1 fix from board QA 2026-05-03).

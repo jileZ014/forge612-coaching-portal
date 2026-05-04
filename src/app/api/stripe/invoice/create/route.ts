@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       amountUsd: amount,
       daysUntilDue,
       autoSendEmail,
+      voidedPriorCount: voidedCount,
     });
 
     const activity: InvoiceActivity = {
