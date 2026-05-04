@@ -7,7 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "bash deploy.sh"
+    "deploy": "bash deploy.sh",
+    "deploy:rules": "firebase deploy --project flight-pay-az --only firestore:rules"
   },
   "dependencies": {
     "firebase": "^12.11.0",
