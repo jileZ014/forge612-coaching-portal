@@ -1,11 +1,12 @@
 rules_version = '2';
-// Deployed 2026-04-07 — parents collection open for Flight_Pay dashboard
+// Updated 2026-05-04 — added families/communications/documents (coach-only PII)
+// for v0 CRM port from genesis-elite. Existing parents/ + teams/{teamId}/* rules preserved.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Parents collection — used by Flight_Pay dashboard (flat collection)
-    // TODO: Add coach auth once login is implemented
+    // Parents collection — used by Flight_Pay invoicing dashboard (flat collection)
+    // TODO: tighten once login is wired across the parents path
     match /parents/{parentId} {
       allow read, write: if true;
     }
@@ -44,6 +45,22 @@ service cloud.firestore {
     match /teams/{teamId}/schedule/{eventId} {
       allow read: if true;
       allow write: if isCoach(teamId);
+    }
+
+    // CRM v0 — coach-only (PII)
+    // Families: parent contacts, lifecycle, tags, do-not-contact flag
+    match /teams/{teamId}/families/{familyId} {
+      allow read, write: if isCoach(teamId);
+    }
+
+    // Communications: SMS/email/notes log per family
+    match /teams/{teamId}/communications/{commId} {
+      allow read, write: if isCoach(teamId);
+    }
+
+    // Documents: medical forms, waivers, photos (metadata; binaries in Storage)
+    match /teams/{teamId}/documents/{docId} {
+      allow read, write: if isCoach(teamId);
     }
   }
 }

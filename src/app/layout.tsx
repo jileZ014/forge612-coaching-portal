@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Space_Grotesk } from "next/font/google";
 import { teamConfig } from "@/lib/team-config";
+import { AuthProvider } from "@/lib/auth-context";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -36,7 +37,7 @@ export default function RootLayout({
       }}
     >
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

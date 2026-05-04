@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 import { teamConfig } from '@/lib/team-config';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -21,15 +23,17 @@ export default function LoginPage() {
     if (!email || !password) return;
     setLoading(true);
     setError('');
-    // TODO: Replace with Firebase auth
-    setTimeout(() => {
-      if (email === teamConfig.coachEmail && password === 'flight2026') {
-        router.push('/dashboard');
-      } else {
-        setLoading(false);
-        setError('Invalid email or password.');
-      }
-    }, 800);
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (err) {
+      const code = (err as { code?: string })?.code ?? '';
+      const msg = code.includes('user-not-found') || code.includes('wrong-password') || code.includes('invalid-credential')
+        ? 'Invalid email or password.'
+        : `Sign-in failed: ${code || (err instanceof Error ? err.message : 'unknown error')}`;
+      setError(msg);
+      setLoading(false);
+    }
   }
 
   return (
