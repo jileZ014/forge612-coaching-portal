@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Parent, MonthlyPayment, LineItem, PaymentMethod, ParentStatus, RateType, Team, TEAMS, RATE_CONFIG, CatalogItem } from '@/lib/flight-types';
-import { teamConfig } from '@/lib/team-config';
+import { Parent, MonthlyPayment, LineItem, PaymentMethod, ParentStatus, RateType, Team, TEAMS, RATE_CONFIG, CatalogItem } from '@/types';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { Users, DollarSign, AlertCircle, TrendingUp, Search, ChevronDown, MessageSquare, RefreshCw, FileText, UserPlus, Zap, X, Check, Loader2 } from 'lucide-react';
 
-// ============ HELPERS ============
-
+// Helper: get month strings for current + previous 2 months
 function getMonthColumns(): { key: string; label: string; shortLabel: string }[] {
   const now = new Date();
   const months: { key: string; label: string; shortLabel: string }[] = [];
@@ -39,38 +36,29 @@ function getDefaultMessage(overdueMonths: string[]): string {
     const [y, mo] = m.split('-');
     return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short' });
   });
+  // "Next Club fee" is always the 7th of next month (not the current invoice due date)
   const now = new Date();
   const nextDue = new Date(now.getFullYear(), now.getMonth() + 1, 7);
   const nextDueStr = `${String(nextDue.getDate()).padStart(2, '0')} ${nextDue.toLocaleString('default', { month: 'short' })}`;
+
   return `- ${monthNames.join(', ')} Monthly club dues\n- Next Club fee is due on ${nextDueStr}\n- If payment arrangement is needed, please do not hesitate to reach out to Jonas at 303.908.6810.`;
 }
 
-const METHOD_BADGES: Record<string, { label: string; bg: string; text: string }> = {
-  square: { label: 'Square', bg: 'bg-blue-500/20', text: 'text-blue-400' },
-  zelle: { label: 'Zelle', bg: 'bg-purple-500/20', text: 'text-purple-400' },
-  cash: { label: 'Cash', bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
-  check: { label: 'Check', bg: 'bg-yellow-500/20', text: 'text-yellow-400' },
-  forgive: { label: 'Forgive', bg: 'bg-pink-500/20', text: 'text-pink-400' },
-};
-
-const METHOD_SHORT: Record<string, { label: string; color: string }> = {
+const METHOD_BADGES: Record<string, { label: string; color: string }> = {
   square: { label: 'S', color: 'bg-blue-600' },
   zelle: { label: 'Z', color: 'bg-purple-600' },
   cash: { label: 'C', color: 'bg-emerald-600' },
   check: { label: 'Ch', color: 'bg-yellow-600' },
-  forgive: { label: 'F', color: 'bg-pink-600' },
 };
 
-const STATUS_COLORS: Record<ParentStatus, { bg: string; text: string; label: string; dot: string }> = {
-  active: { bg: 'bg-success/10', text: 'text-success', label: 'Active', dot: 'bg-success' },
-  on_break: { bg: 'bg-warning/10', text: 'text-warning', label: 'On Break', dot: 'bg-warning' },
-  exempt: { bg: 'bg-blue-500/10', text: 'text-blue-400', label: 'Exempt', dot: 'bg-blue-500' },
-  inactive: { bg: 'bg-text-muted/10', text: 'text-text-muted', label: 'Inactive', dot: 'bg-text-muted' },
+const STATUS_COLORS: Record<ParentStatus, { bg: string; text: string; label: string }> = {
+  active: { bg: 'bg-green-700', text: 'text-white', label: 'Active' },
+  on_break: { bg: 'bg-yellow-700', text: 'text-white', label: 'On Break' },
+  exempt: { bg: 'bg-blue-700', text: 'text-white', label: 'Exempt' },
+  inactive: { bg: 'bg-gray-600', text: 'text-white', label: 'Inactive' },
 };
 
-// ============ MAIN DASHBOARD ============
-
-export default function DashboardPage() {
+export default function Dashboard() {
   const [parents, setParents] = useState<Parent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'owes' | 'paid'>('all');
@@ -103,9 +91,15 @@ export default function DashboardPage() {
   const [sentInvoices, setSentInvoices] = useState<Set<string>>(new Set());
   const [resendLoading, setResendLoading] = useState(false);
 
-  // Existing unpaid invoices from Square
+  // Existing unpaid invoices from Square (keyed by normalized phone)
   const [existingInvoices, setExistingInvoices] = useState<Map<string, { invoiceId: string; publicUrl: string; amount: number; name: string }>>(new Map());
   const [textingParent, setTextingParent] = useState<string | null>(null);
+  const [sendTextModal, setSendTextModal] = useState<{
+    parent: Parent;
+    phone: string;
+    message: string;
+    amount: number;
+  } | null>(null);
 
   const monthColumns = getMonthColumns();
   const currentMonth = monthColumns[2].key;
@@ -140,6 +134,7 @@ export default function DashboardPage() {
         const map = new Map<string, { invoiceId: string; publicUrl: string; amount: number; name: string }>();
         for (const inv of data.invoices) {
           const phone = inv.phone.replace(/\D/g, '').replace(/^1/, '');
+          // Only keep first match per phone (avoid duplicates)
           if (!map.has(phone)) {
             map.set(phone, { invoiceId: inv.invoiceId, publicUrl: inv.publicUrl, amount: inv.amount, name: inv.name });
           }
@@ -153,7 +148,7 @@ export default function DashboardPage() {
 
   useEffect(() => { loadExistingInvoices(); }, [loadExistingInvoices]);
 
-  // Calculate balance
+  // Calculate balance: unpaid months x rate + unpaid line items
   const getBalance = (parent: Parent): number => {
     const rate = getMonthlyRate(parent);
     const payments = parent.payments || {};
@@ -164,6 +159,7 @@ export default function DashboardPage() {
     for (const col of monthColumns) {
       const p = payments[col.key];
       if (!p || p.status !== 'paid') {
+        // For on_break, don't count as owed
         if (status === 'on_break') continue;
         unpaidMonths++;
       }
@@ -176,7 +172,7 @@ export default function DashboardPage() {
     return (unpaidMonths * rate) + unpaidExtras;
   };
 
-  // Get overdue months
+  // Get overdue months for a parent
   const getOverdueMonths = (parent: Parent): string[] => {
     const payments = parent.payments || {};
     return monthColumns
@@ -187,7 +183,7 @@ export default function DashboardPage() {
       .map(col => col.key);
   };
 
-  // Batch create all drafts
+  // Batch create all drafts for families that owe
   const [batchCreating, setBatchCreating] = useState(false);
   const createAllDrafts = async () => {
     const eligible = parents.filter(p => {
@@ -274,12 +270,25 @@ export default function DashboardPage() {
     showNotification(`Created ${created} drafts${failed > 0 ? `, ${failed} failed` : ''}`, failed > 0 ? 'error' : 'success');
   };
 
-  // Filter parents
+  // Filter parents — "owes" and "paid" judged by the CURRENT MONTH only,
+  // so the filter matches the top stats ("Paid This Month") instead of a
+  // rolling 3-month balance (which double-counts families that joined partway
+  // through the season).
   const filteredParents = parents.filter(p => {
     if (statusFilter !== 'all' && (p.status || 'active') !== statusFilter) return false;
     if (statusFilter === 'all' && (p.status === 'inactive')) return false;
-    if (filter === 'owes') return getBalance(p) > 0;
-    if (filter === 'paid') return getBalance(p) === 0;
+
+    const status = p.status || 'active';
+    const paidCurrentMonth = p.payments?.[currentMonth]?.status === 'paid';
+
+    if (filter === 'owes') {
+      if (status !== 'active') return false;
+      return !paidCurrentMonth;
+    }
+    if (filter === 'paid') {
+      return paidCurrentMonth;
+    }
+
     if (search) {
       const q = search.toLowerCase();
       const name = `${p.firstName} ${p.lastName}`.toLowerCase();
@@ -296,7 +305,130 @@ export default function DashboardPage() {
   const outstanding = totalFamilies - paidThisMonth;
   const totalOwed = activeParents.reduce((sum, p) => sum + getBalance(p), 0);
 
-  // Mark payment
+  // Current-month invoice buckets (Square has no "viewed" API, so we track via /r/ redirects)
+  const currentMonthLabel = monthColumns[2].label;
+  type Bucket = 'paid' | 'viewed_unpaid' | 'sent_not_viewed' | 'not_sent';
+  const bucketFor = (p: Parent): Bucket | null => {
+    const status = p.status || 'active';
+    if (status !== 'active') return null;
+    const isPaid = p.payments?.[currentMonth]?.status === 'paid';
+    if (isPaid) return 'paid';
+    const activity = p.invoiceActivity?.[currentMonth];
+    if (!activity || !activity.sentAt) return 'not_sent';
+    if (activity.viewedAt) return 'viewed_unpaid';
+    return 'sent_not_viewed';
+  };
+  const buckets: Record<Bucket, Parent[]> = {
+    paid: [],
+    viewed_unpaid: [],
+    sent_not_viewed: [],
+    not_sent: [],
+  };
+  for (const p of activeParents) {
+    const b = bucketFor(p);
+    if (b) buckets[b].push(p);
+  }
+  const [openBucket, setOpenBucket] = useState<Bucket | null>(null);
+
+  // ─────────────────────────────────────────────────────────────────────
+  // STRIPE / TWILIO UNIFIED INVOICING (May 2026 — replaces Square + Phone Link)
+  // ─────────────────────────────────────────────────────────────────────
+  const [stripeSyncing, setStripeSyncing] = useState(false);
+  const [stripeBatchCreating, setStripeBatchCreating] = useState(false);
+  const [smsSending, setSmsSending] = useState(false);
+
+  // 1) Sync Stripe Customers — ensures every parent has a stripeCustomerId
+  const syncStripeCustomers = async () => {
+    if (!confirm('Sync ALL parents into Stripe as Customers? This is idempotent — re-runs are safe.')) return;
+    setStripeSyncing(true);
+    try {
+      const res = await fetch('/api/stripe/customer-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(`Stripe Customers: ${data.ok} ok, ${data.failed} failed (${data.total} total)`, data.failed === 0 ? 'success' : 'error');
+        loadData();
+      } else {
+        showNotification(`Stripe sync failed: ${data.error ?? 'unknown'}`, 'error');
+      }
+    } catch (err) {
+      showNotification(`Stripe sync error: ${err instanceof Error ? err.message : err}`, 'error');
+    } finally {
+      setStripeSyncing(false);
+    }
+  };
+
+  // 2) Create Stripe Invoices for the current month — parallel to Square's "Create All Drafts"
+  const createStripeInvoicesForCurrentMonth = async () => {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!confirm(`Create Stripe invoices for ${month}? This finalizes invoices (parents see hosted URL once we send the SMS).`)) return;
+    setStripeBatchCreating(true);
+    try {
+      const res = await fetch('/api/stripe/invoice/batch-create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month, daysUntilDue: 7, autoSendEmail: false }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(`Stripe invoices: ${data.ok} created, ${data.failed} failed (${data.total} attempted)`, data.failed === 0 ? 'success' : 'error');
+        loadData();
+      } else {
+        showNotification(`Stripe invoice batch failed: ${data.error ?? 'unknown'}`, 'error');
+      }
+    } catch (err) {
+      showNotification(`Stripe invoice batch error: ${err instanceof Error ? err.message : err}`, 'error');
+    } finally {
+      setStripeBatchCreating(false);
+    }
+  };
+
+  // 3) Send SMS via Twilio for the current month — replaces 56 Phone Link clicks
+  const sendStripeInvoicesViaSms = async () => {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!confirm(`Send SMS via Twilio to all families with a Stripe invoice for ${month}? Goes out automatically — no Phone Link.`)) return;
+    setSmsSending(true);
+    try {
+      const res = await fetch('/api/sms/invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ month }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(`SMS: ${data.ok} sent, ${data.failed} failed (${data.total} attempted)`, data.failed === 0 ? 'success' : 'error');
+        loadData();
+      } else {
+        showNotification(`SMS batch failed: ${data.error ?? 'unknown'}`, 'error');
+      }
+    } catch (err) {
+      showNotification(`SMS batch error: ${err instanceof Error ? err.message : err}`, 'error');
+    } finally {
+      setSmsSending(false);
+    }
+  };
+
+  // Re-text every parent in a bucket sequentially (each click opens the parent's SMS app)
+  const [bucketTexting, setBucketTexting] = useState(false);
+  const remindBucket = async (bucket: Bucket) => {
+    const targets = buckets[bucket];
+    if (targets.length === 0) return;
+    if (!confirm(`Re-text reminders to ${targets.length} families in "${bucket.replace(/_/g, ' ')}"? Each one will open your SMS app.`)) return;
+    setBucketTexting(true);
+    for (const p of targets) {
+      await sendTextToParent(p);
+      // Brief pause so the SMS app has time to handle each click
+      await new Promise(r => setTimeout(r, 800));
+    }
+    setBucketTexting(false);
+  };
+
+  // Mark payment for a specific month
   const markPayment = async (parentId: string, month: string, method: PaymentMethod) => {
     try {
       const parentRef = doc(db, 'parents', parentId);
@@ -363,6 +495,7 @@ export default function DashboardPage() {
           `Synced! ${s.paidCount} paid ($${s.paidTotal}) · ${s.unpaidCount} unpaid ($${s.unpaidTotal}) · ${s.monthsMarked} months marked`,
           'success'
         );
+        // Reload both Firestore data and Square invoice cache
         loadData();
         loadExistingInvoices();
       } else {
@@ -375,7 +508,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Assign teams
+  // Assign teams from roster
   const assignTeams = async () => {
     if (!confirm('Assign teams to all families based on roster?')) return;
     setMigrating(true);
@@ -384,6 +517,9 @@ export default function DashboardPage() {
       const data = await response.json();
       if (data.success) {
         showNotification(`Teams assigned: ${data.updated} updated, ${data.unmatched} unmatched`, 'success');
+        if (data.unmatchedNames?.length > 0) {
+          console.log('Unmatched families:', data.unmatchedNames);
+        }
         loadData();
       } else {
         showNotification('Team assignment failed', 'error');
@@ -395,7 +531,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Re-send texts
+  // Re-send texts for already-published invoices
   const resendTexts = async () => {
     setResendLoading(true);
     try {
@@ -408,7 +544,12 @@ export default function DashboardPage() {
       }
 
       const publishedInvoices: Array<{
-        invoiceId: string; publicUrl: string; phone: string; name: string; amount: number; title: string;
+        invoiceId: string;
+        publicUrl: string;
+        phone: string;
+        name: string;
+        amount: number;
+        title: string;
       }> = data.invoices;
 
       if (publishedInvoices.length === 0) {
@@ -417,7 +558,12 @@ export default function DashboardPage() {
         return;
       }
 
+      // Match to families by phone number.
+      // IMPORTANT: skip any family already marked paid for the current month in
+      // Firestore — Square has stale UNPAID invoices for families who paid in
+      // cash/Zelle (those payment methods don't auto-close Square invoices).
       const matched: typeof pendingInvoices = [];
+      let skippedPaid = 0;
       for (const inv of publishedInvoices) {
         const normalizedInvPhone = inv.phone.replace(/\D/g, '');
         const parent = parents.find(p => {
@@ -425,20 +571,40 @@ export default function DashboardPage() {
           return normalizedParentPhone === normalizedInvPhone && normalizedInvPhone.length >= 10;
         });
 
+        // Skip if this parent already paid this month via any method (cash/Zelle/Square)
+        if (parent?.payments?.[currentMonth]?.status === 'paid') {
+          skippedPaid++;
+          continue;
+        }
+
         if (parent) {
           matched.push({
-            parentId: parent.id, firstName: parent.firstName, lastName: parent.lastName,
-            phone: parent.phone || '', invoiceId: inv.invoiceId, total: inv.amount,
-            months: [], publicUrl: inv.publicUrl,
+            parentId: parent.id,
+            firstName: parent.firstName,
+            lastName: parent.lastName,
+            phone: parent.phone || '',
+            invoiceId: inv.invoiceId,
+            total: inv.amount,
+            months: [], // already published, months not needed
+            publicUrl: inv.publicUrl,
           });
         } else {
+          // No match in dashboard — still include with Square data
           const nameParts = inv.name.split(' ');
           matched.push({
-            parentId: `square_${inv.invoiceId}`, firstName: nameParts[0] || 'Unknown',
-            lastName: nameParts.slice(1).join(' ') || '', phone: inv.phone,
-            invoiceId: inv.invoiceId, total: inv.amount, months: [], publicUrl: inv.publicUrl,
+            parentId: `square_${inv.invoiceId}`,
+            firstName: nameParts[0] || 'Unknown',
+            lastName: nameParts.slice(1).join(' ') || '',
+            phone: inv.phone,
+            invoiceId: inv.invoiceId,
+            total: inv.amount,
+            months: [],
+            publicUrl: inv.publicUrl,
           });
         }
+      }
+      if (skippedPaid > 0) {
+        showNotification(`Skipped ${skippedPaid} already-paid (cash/Zelle) families from the re-send queue`, 'success');
       }
 
       setPendingInvoices(matched);
@@ -452,12 +618,15 @@ export default function DashboardPage() {
     }
   };
 
-  // Send text to single parent
+  // Send text to a single parent with their existing invoice link
+  // If dashboard balance doesn't match Square invoice, cancel old + create new
   const sendTextToParent = async (parent: Parent) => {
     const normalizedPhone = (parent.phone || '').replace(/\D/g, '').replace(/^1/, '');
     const dashboardBalance = getBalance(parent);
+
     setTextingParent(parent.id);
 
+    // Fetch fresh invoice data from Square
     let publicUrl = '';
     let amount = 0;
     let invoiceId = '';
@@ -478,16 +647,18 @@ export default function DashboardPage() {
       console.error('Failed to fetch fresh invoice:', err);
     }
 
-    // If amounts don't match, cancel old and create new
+    // If amounts don't match, cancel old invoice and create a new one
     if (invoiceId && amount !== dashboardBalance && dashboardBalance > 0) {
       showNotification(`Updating invoice: $${amount} → $${dashboardBalance}...`, 'success');
       try {
+        // Cancel old invoice
         await fetch('/api/square/invoice/batch-cancel', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceIds: [invoiceId] }),
         });
 
+        // Build line items from dashboard state
         const rate = getMonthlyRate(parent);
         const overdueMonths = getOverdueMonths(parent);
         const unpaidExtras = (parent.lineItems || []).filter(li => li.status !== 'paid');
@@ -501,20 +672,26 @@ export default function DashboardPage() {
           lineItems.push({ description: extra.description, amount: extra.amount, quantity: 1 });
         }
 
+        // Create new invoice
         const createRes = await fetch('/api/square/invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone: parent.phone, customerId: parent.squareCustomerId, lineItems,
-            message: getDefaultMessage(overdueMonths), dueDate: getDefaultDueDate(),
+            phone: parent.phone,
+            customerId: parent.squareCustomerId,
+            lineItems,
+            message: getDefaultMessage(overdueMonths),
+            dueDate: getDefaultDueDate(),
             playerName: (parent.playerNames || []).join(', ') || parent.firstName,
-            parentFirstName: parent.firstName, parentLastName: parent.lastName,
+            parentFirstName: parent.firstName,
+            parentLastName: parent.lastName,
             billingMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
           }),
         });
         const createData = await createRes.json();
 
         if (createData.success && createData.invoiceId) {
+          // Publish it
           const pubRes = await fetch('/api/square/invoice/publish', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -552,10 +729,14 @@ export default function DashboardPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phone: parent.phone, customerId: parent.squareCustomerId, lineItems,
-            message: getDefaultMessage(overdueMonths), dueDate: getDefaultDueDate(),
+            phone: parent.phone,
+            customerId: parent.squareCustomerId,
+            lineItems,
+            message: getDefaultMessage(overdueMonths),
+            dueDate: getDefaultDueDate(),
             playerName: (parent.playerNames || []).join(', ') || parent.firstName,
-            parentFirstName: parent.firstName, parentLastName: parent.lastName,
+            parentFirstName: parent.firstName,
+            parentLastName: parent.lastName,
             billingMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
           }),
         });
@@ -589,190 +770,294 @@ export default function DashboardPage() {
     // Update cache
     setExistingInvoices(prev => {
       const next = new Map(prev);
-      next.set(normalizedPhone, { invoiceId, publicUrl, amount, name: `${parent.firstName} ${parent.lastName}` });
+      next.set(normalizedPhone, { invoiceId: invoiceId, publicUrl, amount, name: `${parent.firstName} ${parent.lastName}` });
       return next;
     });
 
-    const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${amount} is ready. Pay here: ${publicUrl} - Coach Jonas`;
+    // Build trackable redirect URL — Square has no "viewed" API, so we route through
+    // /r/{parentId}/{month} which logs the click and forwards to the Square invoice page.
+    const trackUrl = `${window.location.origin}/r/${parent.id}/${currentMonth}`;
+    const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${amount} is ready. Pay here: ${trackUrl} - Coach Jonas`;
 
-    try {
-      await navigator.clipboard.writeText(smsBody);
-    } catch { /* clipboard may fail */ }
-
-    const smsLink = document.createElement('a');
-    smsLink.href = `sms:${normalizedPhone}?body=${encodeURIComponent(smsBody)}`;
-    smsLink.click();
-
-    // Save lastTexted
-    try {
-      const parentRef = doc(db, 'parents', parent.id);
-      const now = new Date().toISOString();
-      await updateDoc(parentRef, { lastTexted: now });
-      setParents(prev => prev.map(p => p.id === parent.id ? { ...p, lastTexted: now } : p));
-    } catch (err) {
-      console.error('Failed to save lastTexted:', err);
-    }
-
-    showNotification(`Message copied ($${amount})! Paste in Phone Link and send to ${parent.firstName}`, 'success');
+    // Stash invoice details on the modal so the user can confirm-sent later
+    setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount });
     setTextingParent(null);
   };
 
-  // ============ RENDER ============
-
   if (loading) {
     return (
-      <div className="min-h-[100dvh] bg-background flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin" style={{ color: teamConfig.accentColor }} />
-          <span className="text-text-secondary font-display text-lg">Loading dashboard...</span>
-        </div>
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[100dvh] bg-background">
-      {/* Notification Toast */}
+    <div className="min-h-screen bg-gray-900 text-white">
+      <DashboardHeader />
+      {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-5 py-3.5 rounded-xl shadow-2xl backdrop-blur-sm border transition-all duration-300 ${
-          notification.type === 'success'
-            ? 'bg-success/10 border-success/30 text-success'
-            : 'bg-error/10 border-error/30 text-error'
-        }`}>
-          <p className="text-sm font-medium">{notification.message}</p>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+          {notification.message}
         </div>
       )}
 
-      <DashboardHeader />
+      {/* Header */}
+      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div className="max-w-[1600px] mx-auto">
+          <div className="flex justify-between items-center mb-3">
+            <div>
+              <h1 className="text-2xl font-bold text-orange-500">Flight Pay</h1>
+              <p className="text-gray-400 text-sm">AZ Flight Basketball — Unified Invoicing (Stripe + Twilio)</p>
+            </div>
+            <button onClick={() => setAddModal(true)}
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition">
+              + Add Family
+            </button>
+          </div>
 
-      <main className="max-w-[1600px] mx-auto px-4 md:px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-surface rounded-2xl p-5 border border-border hover:border-border-hover transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Users className="w-5 h-5" style={{ color: teamConfig.accentColor }} />
-              </div>
-              <span className="text-text-muted text-sm">Total Families</span>
-            </div>
-            <p className="text-3xl font-display font-bold">{totalFamilies}</p>
+          {/* Unified Stripe/Twilio invoicing pipeline (current) */}
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
+            <span className="text-xs uppercase tracking-wide text-indigo-400 font-semibold mr-2">Invoicing Pipeline</span>
+            <button onClick={syncStripeCustomers} disabled={stripeSyncing}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              {stripeSyncing ? 'Syncing…' : '1. Sync Stripe Customers'}
+            </button>
+            <button onClick={createStripeInvoicesForCurrentMonth} disabled={stripeBatchCreating}
+              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              {stripeBatchCreating ? 'Creating…' : '2. Create Stripe Invoices'}
+            </button>
+            <button onClick={sendStripeInvoicesViaSms} disabled={smsSending}
+              className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-bold transition disabled:opacity-50">
+              {smsSending ? 'Sending…' : '3. Send All SMS via Twilio'}
+            </button>
+            <button onClick={assignTeams} disabled={migrating}
+              className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              {migrating ? 'Assigning…' : 'Set Teams'}
+            </button>
           </div>
-          <div className="bg-surface rounded-2xl p-5 border border-border hover:border-border-hover transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                <Check className="w-5 h-5 text-success" />
-              </div>
-              <span className="text-text-muted text-sm">Paid This Month</span>
-            </div>
-            <p className="text-3xl font-display font-bold text-success">{paidThisMonth}</p>
-          </div>
-          <div className="bg-surface rounded-2xl p-5 border border-border hover:border-border-hover transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                <AlertCircle className="w-5 h-5 text-warning" />
-              </div>
-              <span className="text-text-muted text-sm">Outstanding</span>
-            </div>
-            <p className="text-3xl font-display font-bold" style={{ color: teamConfig.accentColor }}>{outstanding}</p>
-          </div>
-          <div className="bg-surface rounded-2xl p-5 border border-border hover:border-border-hover transition-colors">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-error/10 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-error" />
-              </div>
-              <span className="text-text-muted text-sm">Total Owed</span>
-            </div>
-            <p className="text-3xl font-display font-bold text-error">${totalOwed.toLocaleString()}</p>
+
+          {/* Square fallback (legacy — kept dormant per Taleb hedge) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs uppercase tracking-wide text-gray-500 font-semibold mr-2">Square (legacy fallback)</span>
+            <button onClick={createAllDrafts} disabled={batchCreating}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              {batchCreating ? 'Creating…' : 'Create Square Drafts'}
+            </button>
+            <button onClick={resendTexts} disabled={resendLoading}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              {resendLoading ? 'Loading…' : 'Re-send via Phone Link'}
+            </button>
+            {pendingInvoices.length > 0 && (
+              <button onClick={() => setShowBatchSend(true)}
+                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold transition">
+                Send All Texts ({pendingInvoices.length})
+              </button>
+            )}
+            <button onClick={syncWithSquare} disabled={syncing}
+              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              {syncing ? 'Syncing…' : 'Sync Square'}
+            </button>
           </div>
         </div>
+      </header>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          <button onClick={createAllDrafts} disabled={batchCreating}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 border border-purple-500/20 disabled:opacity-50">
-            {batchCreating ? <><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Creating...</> : <><FileText className="w-4 h-4 inline mr-2" />Create All Drafts</>}
-          </button>
-          <button onClick={resendTexts} disabled={resendLoading}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border disabled:opacity-50 hover:brightness-110"
-            style={{ background: `${teamConfig.accentColor}15`, color: teamConfig.accentColor, borderColor: `${teamConfig.accentColor}30` }}>
-            {resendLoading ? <><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Loading...</> : <><MessageSquare className="w-4 h-4 inline mr-2" />Re-send Texts</>}
-          </button>
-          {pendingInvoices.length > 0 && (
-            <button onClick={() => setShowBatchSend(true)}
-              className="px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 bg-success/10 text-success hover:bg-success/20 border border-success/20 animate-pulse">
-              <Zap className="w-4 h-4 inline mr-2" />Send All Texts ({pendingInvoices.length})
-            </button>
+      <main className="max-w-[1600px] mx-auto px-6 py-8">
+        {/* Current Month Invoice Status — Paid / Viewed / Not Viewed / Not Sent */}
+        <div className="mb-6">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 className="text-lg font-semibold text-gray-200">{currentMonthLabel} — Invoice Status</h2>
+            <span className="text-sm text-gray-500">Click a card to see who&apos;s in it</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {([
+              { key: 'paid' as const, label: 'Paid', color: 'green', desc: 'Square shows paid' },
+              { key: 'viewed_unpaid' as const, label: 'Viewed · Unpaid', color: 'yellow', desc: 'Opened the link but not paid' },
+              { key: 'sent_not_viewed' as const, label: 'Sent · Not Viewed', color: 'orange', desc: 'Texted but never opened' },
+              { key: 'not_sent' as const, label: 'Not Sent', color: 'red', desc: 'Owes but no invoice texted yet' },
+            ]).map(({ key, label, color, desc }) => {
+              const list = buckets[key];
+              const colorMap: Record<string, string> = {
+                green: 'border-green-600/60 bg-green-900/20 text-green-400',
+                yellow: 'border-yellow-600/60 bg-yellow-900/20 text-yellow-400',
+                orange: 'border-orange-600/60 bg-orange-900/20 text-orange-400',
+                red: 'border-red-600/60 bg-red-900/20 text-red-400',
+              };
+              return (
+                <button
+                  key={key}
+                  onClick={() => setOpenBucket(openBucket === key ? null : key)}
+                  className={`rounded-xl p-5 border text-left transition hover:brightness-125 ${colorMap[color]} ${openBucket === key ? 'ring-2 ring-white/30' : ''}`}
+                >
+                  <p className="text-sm font-medium opacity-90">{label}</p>
+                  <p className="text-3xl font-bold mt-1">{list.length}</p>
+                  <p className="text-xs opacity-70 mt-1">{desc}</p>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Drilldown list for the open bucket */}
+          {openBucket && (
+            <div className="mt-4 bg-gray-800 border border-gray-700 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-gray-200">
+                  {openBucket.replace(/_/g, ' ')} — {buckets[openBucket].length} families
+                </h3>
+                <div className="flex gap-2">
+                  {(openBucket === 'viewed_unpaid' || openBucket === 'sent_not_viewed' || openBucket === 'not_sent') && buckets[openBucket].length > 0 && (
+                    <button
+                      onClick={() => remindBucket(openBucket)}
+                      disabled={bucketTexting}
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium disabled:opacity-50"
+                    >
+                      {bucketTexting ? 'Sending...' : `Re-text all ${buckets[openBucket].length}`}
+                    </button>
+                  )}
+                  <button onClick={() => setOpenBucket(null)} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-sm">
+                    Close
+                  </button>
+                </div>
+              </div>
+              {buckets[openBucket].length === 0 ? (
+                <p className="text-gray-500 text-sm">No families in this bucket.</p>
+              ) : (
+                <div className="divide-y divide-gray-700">
+                  {buckets[openBucket]
+                    .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''))
+                    .map(p => {
+                      const activity = p.invoiceActivity?.[currentMonth];
+                      const sentAgo = activity?.sentAt ? Math.round((Date.now() - new Date(activity.sentAt).getTime()) / 60000) : null;
+                      const viewedAgo = activity?.viewedAt ? Math.round((Date.now() - new Date(activity.viewedAt).getTime()) / 60000) : null;
+                      const fmt = (m: number) => m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`;
+                      return (
+                        <div key={p.id} className="flex items-center justify-between py-2.5">
+                          <div className="flex-1">
+                            <p className="font-medium text-white">{p.firstName} {p.lastName}</p>
+                            <p className="text-xs text-gray-400">
+                              {(p.playerNames || []).join(', ') || '-'} · ${getBalance(p)}
+                              {sentAgo !== null && <span className="ml-2">· sent {fmt(sentAgo)}</span>}
+                              {viewedAgo !== null && <span className="ml-2 text-yellow-400">· viewed {fmt(viewedAgo)} ({activity?.viewCount ?? 0}x)</span>}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            {openBucket !== 'paid' && activity?.sentAt && (
+                              <button
+                                onClick={async () => {
+                                  if (!confirm(`Mark ${p.firstName} as NOT texted? (This clears the sent/viewed history for ${currentMonthLabel} only.)`)) return;
+                                  try {
+                                    const res = await fetch('/api/audit/clear-sent', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({ parentIds: [p.id], month: currentMonth }),
+                                    });
+                                    const data = await res.json();
+                                    if (data.success) {
+                                      setParents(prev => prev.map(x => {
+                                        if (x.id !== p.id) return x;
+                                        const nextActivity = { ...(x.invoiceActivity || {}) };
+                                        delete nextActivity[currentMonth];
+                                        return { ...x, invoiceActivity: nextActivity };
+                                      }));
+                                      showNotification(`Cleared sent history for ${p.firstName}`, 'success');
+                                    } else {
+                                      showNotification('Failed to clear sent history', 'error');
+                                    }
+                                  } catch {
+                                    showNotification('Failed to clear sent history', 'error');
+                                  }
+                                }}
+                                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-sm font-medium"
+                                title="Clear the sent/viewed history for this month only — use when the family was marked sent but wasn't actually texted"
+                              >
+                                Undo sent
+                              </button>
+                            )}
+                            {openBucket !== 'paid' && p.phone && (
+                              <button
+                                onClick={() => sendTextToParent(p)}
+                                disabled={textingParent === p.id}
+                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium disabled:opacity-50"
+                              >
+                                {textingParent === p.id ? '...' : (activity?.sentAt ? 'Re-text' : 'Text')}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           )}
-          <button onClick={assignTeams} disabled={migrating}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-warning/10 text-warning hover:bg-warning/20 border border-warning/20 disabled:opacity-50">
-            {migrating ? 'Assigning...' : 'Set Teams'}
-          </button>
-          <button onClick={syncWithSquare} disabled={syncing}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 disabled:opacity-50">
-            {syncing ? <><Loader2 className="w-4 h-4 animate-spin inline mr-2" />Syncing...</> : <><RefreshCw className="w-4 h-4 inline mr-2" />Sync Square</>}
-          </button>
-          <button onClick={() => setAddModal(true)}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 text-white hover:brightness-110 border-0"
-            style={{ background: teamConfig.accentColor }}>
-            <UserPlus className="w-4 h-4 inline mr-2" />Add Family
-          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <p className="text-gray-400 text-base">Total Families</p>
+            <p className="text-3xl font-bold">{totalFamilies}</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <p className="text-gray-400 text-base">Paid This Month</p>
+            <p className="text-3xl font-bold text-green-500">{paidThisMonth}</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <p className="text-gray-400 text-base">Outstanding</p>
+            <p className="text-3xl font-bold text-orange-500">{outstanding}</p>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <p className="text-gray-400 text-base">Total Owed</p>
+            <p className="text-3xl font-bold text-red-500">${totalOwed.toLocaleString()}</p>
+          </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-6 items-center">
-          <div className="flex bg-surface rounded-xl p-1 border border-border">
+        <div className="flex flex-wrap gap-4 mb-6 items-center">
+          <div className="flex bg-gray-800 rounded-lg p-1">
             {(['all', 'owes', 'paid'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  filter === f ? 'text-white shadow-lg' : 'text-text-muted hover:text-foreground'
-                }`}
-                style={filter === f ? { background: teamConfig.accentColor } : {}}>
+                className={`px-4 py-2 rounded-md font-medium transition ${filter === f ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-white'}`}>
                 {f === 'all' ? 'All' : f === 'owes' ? 'Owes' : 'Paid'}
               </button>
             ))}
           </div>
-          <div className="flex bg-surface rounded-xl p-1 border border-border">
+          <div className="flex bg-gray-800 rounded-lg p-1">
             {(['all', 'active', 'on_break', 'exempt', 'inactive'] as const).map(s => (
               <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  statusFilter === s ? 'bg-surface-elevated text-foreground shadow-sm' : 'text-text-muted hover:text-foreground'
-                }`}>
+                className={`px-4 py-2 rounded-md text-base font-medium transition ${statusFilter === s ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}>
                 {s === 'all' ? 'All Status' : STATUS_COLORS[s].label}
               </button>
             ))}
           </div>
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-            <input type="text" placeholder="Search name..." value={search} onChange={e => setSearch(e.target.value)}
-              className="bg-surface border border-border rounded-xl pl-10 pr-4 py-2.5 text-foreground text-sm w-56 focus:border-accent focus:outline-none transition-colors placeholder:text-text-muted" />
-          </div>
+          <input type="text" placeholder="Search name..." value={search} onChange={e => setSearch(e.target.value)}
+            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-base w-56" />
         </div>
 
         {/* Table */}
         {parents.length === 0 ? (
-          <div className="bg-surface rounded-2xl p-12 text-center border border-border">
-            <p className="text-text-muted text-lg mb-4">No data imported yet</p>
-            <a href="/import" className="inline-block px-6 py-3 rounded-xl font-medium transition text-white hover:brightness-110"
-              style={{ background: teamConfig.accentColor }}>
+          <div className="bg-gray-800 rounded-xl p-12 text-center border border-gray-700">
+            <p className="text-gray-400 text-lg mb-4">No data imported yet</p>
+            <a href="/import" className="inline-block px-6 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition">
               Import Your Excel Tracker
             </a>
           </div>
         ) : (
-          <div className="bg-surface rounded-2xl border border-border overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto">
+            <table className="w-full text-lg">
               <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left px-4 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Parent</th>
-                  <th className="text-left px-4 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Players</th>
-                  <th className="text-center px-3 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Rate</th>
-                  <th className="text-left px-4 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Phone</th>
+                <tr className="border-b border-gray-700 bg-gray-800">
+                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Parent</th>
+                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Players</th>
+                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Rate</th>
+                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Phone</th>
                   {monthColumns.map(col => (
-                    <th key={col.key} className="text-center px-3 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">{col.shortLabel}</th>
+                    <th key={col.key} className="text-center px-3 py-4 text-gray-400 font-semibold text-base">{col.shortLabel}</th>
                   ))}
-                  <th className="text-center px-3 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Extras</th>
-                  <th className="text-right px-4 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Balance</th>
-                  <th className="text-center px-3 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-right px-4 py-4 text-text-muted font-medium text-xs uppercase tracking-wider">Actions</th>
+                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Extras</th>
+                  <th className="text-right px-4 py-4 text-gray-400 font-semibold text-base">Balance</th>
+                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Status</th>
+                  <th className="text-right px-4 py-4 text-gray-400 font-semibold text-base">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -784,167 +1069,205 @@ export default function DashboardPage() {
                   return (
                     <React.Fragment key={teamGroup || 'unassigned'}>
                       <tr>
-                        <td colSpan={10} className="px-4 py-3 border-b border-border bg-surface-elevated">
-                          <span className="text-sm font-display font-bold" style={{ color: teamConfig.accentColor }}>
-                            {teamGroup || 'Unassigned'}
-                          </span>
-                          <span className="text-xs text-text-muted ml-3">
-                            {teamParents.length} {teamParents.length === 1 ? 'family' : 'families'}
-                          </span>
+                        <td colSpan={10} className="bg-gray-700/60 px-4 py-3 border-b border-gray-600">
+                          <span className="text-lg font-bold text-orange-400">{teamGroup || 'Unassigned'}</span>
+                          <span className="text-sm text-gray-400 ml-3">{teamParents.length} {teamParents.length === 1 ? 'family' : 'families'}</span>
                         </td>
                       </tr>
                       {teamParents.map(parent => {
-                        const balance = getBalance(parent);
-                        const payments = parent.payments || {};
-                        const status = parent.status || 'active';
-                        const unpaidExtras = (parent.lineItems || []).filter(li => li.status !== 'paid');
-                        const extrasTotal = unpaidExtras.reduce((s, li) => s + li.amount, 0);
-                        const canInvoice = balance > 0 && parent.phone && status === 'active';
+                  const balance = getBalance(parent);
+                  const payments = parent.payments || {};
+                  const status = parent.status || 'active';
+                  const unpaidExtras = (parent.lineItems || []).filter(li => li.status !== 'paid');
+                  const extrasTotal = unpaidExtras.reduce((s, li) => s + li.amount, 0);
+                  // Only treat this family as needing an invoice if they haven't paid the CURRENT MONTH.
+                  // (getBalance sums unpaid cells across all 3 visible months, which inflates the count
+                  // for families that joined partway through the season and never had earlier months billed.)
+                  const paidCurrentMonth = parent.payments?.[currentMonth]?.status === 'paid';
+                  const canInvoice = !paidCurrentMonth && parent.phone && status === 'active';
+
+                  return (
+                    <tr key={parent.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                      {/* Parent Name */}
+                      <td className="px-4 py-4">
+                        <p className="font-medium">{parent.firstName} {parent.lastName}</p>
+                        {parent.email && <p className="text-gray-500 text-sm">{parent.email}</p>}
+                      </td>
+
+                      {/* Players */}
+                      <td className="px-4 py-3">
+                        <p className="text-gray-300">{(parent.playerNames || []).join(', ') || '-'}</p>
+                      </td>
+
+                      {/* Rate */}
+                      <td className="px-3 py-3 text-center">
+                        <span className="text-gray-300">${getMonthlyRate(parent)}</span>
+                      </td>
+
+                      {/* Phone */}
+                      <td className="px-4 py-3 text-gray-300 text-sm">
+                        {parent.phone || <span className="text-red-400">No phone</span>}
+                      </td>
+
+                      {/* Month Checkboxes */}
+                      {monthColumns.map(col => {
+                        const payment = payments[col.key];
+                        const isPaid = payment?.status === 'paid';
+                        const isDropdownOpen = paymentDropdown?.parentId === parent.id && paymentDropdown?.month === col.key;
 
                         return (
-                          <tr key={parent.id} className="border-b border-border hover:bg-surface-elevated/50 transition-colors">
-                            {/* Parent Name */}
-                            <td className="px-4 py-3.5">
-                              <p className="font-medium text-foreground">{parent.firstName} {parent.lastName}</p>
-                              {parent.email && <p className="text-text-muted text-xs mt-0.5">{parent.email}</p>}
-                            </td>
-
-                            {/* Players */}
-                            <td className="px-4 py-3.5">
-                              <p className="text-text-secondary text-sm">{(parent.playerNames || []).join(', ') || '-'}</p>
-                            </td>
-
-                            {/* Rate */}
-                            <td className="px-3 py-3.5 text-center">
-                              <span className="text-text-secondary text-sm">${getMonthlyRate(parent)}</span>
-                            </td>
-
-                            {/* Phone */}
-                            <td className="px-4 py-3.5 text-text-secondary text-sm">
-                              {parent.phone || <span className="text-error text-xs">No phone</span>}
-                            </td>
-
-                            {/* Month Checkboxes */}
-                            {monthColumns.map(col => {
-                              const payment = payments[col.key];
-                              const isPaid = payment?.status === 'paid';
-                              const isDropdownOpen = paymentDropdown?.parentId === parent.id && paymentDropdown?.month === col.key;
-
-                              return (
-                                <td key={col.key} className="px-3 py-3.5 text-center relative">
-                                  {isPaid ? (
-                                    <button onClick={() => undoPayment(parent.id, col.key)}
-                                      className="w-9 h-9 rounded-lg bg-success/10 border border-success/30 flex items-center justify-center mx-auto hover:bg-success/20 transition-all"
-                                      title={`Paid via ${payment.method} — click to undo`}>
-                                      <span className={`text-xs font-bold text-white ${METHOD_SHORT[payment.method || '']?.color || ''} rounded px-1.5 py-0.5`}>
-                                        {METHOD_SHORT[payment.method || '']?.label || '?'}
-                                      </span>
-                                    </button>
-                                  ) : status === 'on_break' || status === 'exempt' || status === 'inactive' ? (
-                                    <div className="w-9 h-9 rounded-lg bg-surface-elevated border border-border flex items-center justify-center mx-auto">
-                                      <span className="text-text-muted text-xs">-</span>
-                                    </div>
-                                  ) : (
-                                    <div className="relative inline-block">
-                                      <button onClick={() => setPaymentDropdown(isDropdownOpen ? null : { parentId: parent.id, month: col.key })}
-                                        className="w-9 h-9 rounded-lg bg-error/10 border border-error/30 flex items-center justify-center mx-auto hover:bg-error/20 transition-all">
-                                      </button>
-                                      {isDropdownOpen && (
-                                        <div className="absolute z-20 top-11 left-1/2 -translate-x-1/2 bg-surface-elevated rounded-xl shadow-2xl border border-border py-1.5 min-w-[130px]">
-                                          {(['square', 'zelle', 'cash', 'check', 'forgive'] as PaymentMethod[]).map(m => (
-                                            <button key={m} onClick={() => markPayment(parent.id, col.key, m)}
-                                              className={`block w-full text-left px-4 py-2 text-sm font-medium ${METHOD_BADGES[m].text} hover:bg-surface transition-colors capitalize`}>
-                                              {m}
-                                            </button>
-                                          ))}
-                                          <button onClick={() => setPaymentDropdown(null)}
-                                            className="block w-full text-left px-4 py-2 text-sm text-text-muted hover:bg-surface transition-colors border-t border-border mt-1">
-                                            Cancel
-                                          </button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </td>
-                              );
-                            })}
-
-                            {/* Extras */}
-                            <td className="px-3 py-3.5 text-center">
-                              {unpaidExtras.length > 0 ? (
-                                <button onClick={() => setAddChargeModal(parent)}
-                                  className="text-xs font-medium text-warning hover:text-yellow-300 transition-colors px-2 py-1 rounded-lg bg-warning/10 border border-warning/20 hover:bg-warning/20">
-                                  {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} — ${extrasTotal}
-                                </button>
-                              ) : (
-                                <button onClick={() => setAddChargeModal(parent)}
-                                  className="text-xs font-medium text-text-secondary hover:text-foreground transition-colors px-2 py-1 rounded-lg bg-surface-elevated border border-border hover:bg-border">
-                                  + Add
-                                </button>
-                              )}
-                            </td>
-
-                            {/* Balance */}
-                            <td className="px-4 py-3.5 text-right">
-                              <span className={`font-display font-bold text-sm ${
-                                balance === 0 ? 'text-success' : balance > getMonthlyRate(parent) ? 'text-error' : ''
-                              }`} style={balance > 0 && balance <= getMonthlyRate(parent) ? { color: teamConfig.accentColor } : {}}>
-                                ${balance}
-                              </span>
-                            </td>
-
-                            {/* Status */}
-                            <td className="px-3 py-3.5 text-center">
-                              <select value={status}
-                                onChange={e => updateStatus(parent.id, e.target.value as ParentStatus)}
-                                className={`text-xs font-semibold rounded-full px-3 py-1.5 border-0 cursor-pointer appearance-none ${STATUS_COLORS[status].bg} ${STATUS_COLORS[status].text}`}>
-                                <option value="active">Active</option>
-                                <option value="on_break">On Break</option>
-                                <option value="exempt">Exempt</option>
-                                <option value="inactive">Inactive</option>
-                              </select>
-                            </td>
-
-                            {/* Actions */}
-                            <td className="px-4 py-3.5 text-right">
-                              <div className="flex justify-end gap-1.5">
-                                {canInvoice && (() => {
-                                  if (parent.lastTexted) {
-                                    const textedDate = new Date(parent.lastTexted);
-                                    const timeAgo = Math.round((Date.now() - textedDate.getTime()) / 60000);
-                                    const label = timeAgo < 60 ? `${timeAgo}m ago` : timeAgo < 1440 ? `${Math.round(timeAgo / 60)}h ago` : `${Math.round(timeAgo / 1440)}d ago`;
-                                    return (
-                                      <div className="flex flex-col items-end gap-0.5">
-                                        <span className="px-3 py-1.5 bg-success/10 border border-success/30 text-success rounded-lg text-xs font-medium">
-                                          Texted ✓
-                                        </span>
-                                        <span className="text-[10px] text-text-muted">{label}</span>
-                                        <button onClick={() => sendTextToParent(parent)}
-                                          disabled={textingParent === parent.id}
-                                          className="text-[10px] text-blue-400 hover:text-blue-300 disabled:opacity-50 transition-colors">
-                                          {textingParent === parent.id ? 'Updating...' : 'Re-text'}
-                                        </button>
-                                      </div>
-                                    );
-                                  } else {
-                                    return (
-                                      <button onClick={() => sendTextToParent(parent)}
-                                        disabled={textingParent === parent.id}
-                                        className="px-3 py-1.5 bg-success/10 hover:bg-success/20 text-success border border-success/30 rounded-lg text-xs font-medium transition-all disabled:opacity-50">
-                                        {textingParent === parent.id ? <><Loader2 className="w-3 h-3 animate-spin inline mr-1" />...</> : 'Text'}
-                                      </button>
-                                    );
-                                  }
-                                })()}
-                                <button onClick={() => setEditModal(parent)}
-                                  className="px-3 py-1.5 bg-surface-elevated hover:bg-border text-text-secondary rounded-lg text-xs font-medium transition-all border border-border">
-                                  Edit
-                                </button>
+                          <td key={col.key} className="px-3 py-3 text-center relative">
+                            {isPaid ? (
+                              <button onClick={() => undoPayment(parent.id, col.key)}
+                                className="w-10 h-10 rounded bg-green-500/30 border-2 border-green-400/60 flex items-center justify-center mx-auto hover:bg-green-500/50 transition"
+                                title={`Paid via ${payment.method} — click to undo`}>
+                                <span className={`text-sm font-bold text-white ${METHOD_BADGES[payment.method || '']?.color || ''} rounded px-1.5`}>
+                                  {METHOD_BADGES[payment.method || '']?.label || '?'}
+                                </span>
+                              </button>
+                            ) : status === 'on_break' || status === 'exempt' || status === 'inactive' ? (
+                              <div className="w-10 h-10 rounded bg-gray-700 border border-gray-600 flex items-center justify-center mx-auto">
+                                <span className="text-gray-500 text-sm">-</span>
                               </div>
-                            </td>
-                          </tr>
+                            ) : (
+                              <div className="relative inline-block">
+                                <button onClick={() => setPaymentDropdown(isDropdownOpen ? null : { parentId: parent.id, month: col.key })}
+                                  className="w-10 h-10 rounded bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center mx-auto hover:bg-red-500/30 transition">
+                                </button>
+                                {isDropdownOpen && (
+                                  <div className="absolute z-20 top-12 left-1/2 -translate-x-1/2 bg-gray-700 rounded-lg shadow-xl border border-gray-600 py-2 min-w-[120px]">
+                                    <button onClick={() => markPayment(parent.id, col.key, 'square')}
+                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-blue-300 hover:bg-blue-600 hover:text-white transition">
+                                      Square
+                                    </button>
+                                    <button onClick={() => markPayment(parent.id, col.key, 'zelle')}
+                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-purple-300 hover:bg-purple-600 hover:text-white transition">
+                                      Zelle
+                                    </button>
+                                    <button onClick={() => markPayment(parent.id, col.key, 'cash')}
+                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-emerald-300 hover:bg-emerald-600 hover:text-white transition">
+                                      Cash
+                                    </button>
+                                    <button onClick={() => setPaymentDropdown(null)}
+                                      className="block w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-600 transition border-t border-gray-600 mt-1 pt-2.5">
+                                      Cancel
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
                         );
                       })}
+
+                      {/* Extras */}
+                      <td className="px-3 py-3 text-center">
+                        {unpaidExtras.length > 0 ? (
+                          <button onClick={() => setAddChargeModal(parent)}
+                            className="text-sm text-yellow-400 hover:text-yellow-300">
+                            {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} - ${extrasTotal}
+                          </button>
+                        ) : (
+                          <button onClick={() => setAddChargeModal(parent)}
+                            className="text-sm text-gray-500 hover:text-gray-400">
+                            +
+                          </button>
+                        )}
+                      </td>
+
+                      {/* Balance */}
+                      <td className="px-4 py-3 text-right">
+                        <span className={`font-bold ${balance === 0 ? 'text-green-500' : balance > getMonthlyRate(parent) ? 'text-red-500' : 'text-orange-500'}`}>
+                          ${balance}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-3 py-3 text-center">
+                        <select value={status}
+                          onChange={e => updateStatus(parent.id, e.target.value as ParentStatus)}
+                          className={`text-sm font-semibold rounded-full px-3 py-1.5 border-0 cursor-pointer ${STATUS_COLORS[status].bg} ${STATUS_COLORS[status].text}`}>
+                          <option value="active">Active</option>
+                          <option value="on_break">On Break</option>
+                          <option value="exempt">Exempt</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          {(() => {
+                            // Show a concrete status line per family for the current month —
+                            // Paid · Viewed · Sent · Not Sent — similar to Square's invoice list.
+                            const activity = parent.invoiceActivity?.[currentMonth];
+                            const paid = parent.payments?.[currentMonth];
+                            const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
+
+                            // PAID — highest priority
+                            if (paid?.status === 'paid') {
+                              return (
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <span className="px-3 py-1.5 bg-green-600/30 border border-green-600 text-green-300 rounded text-sm font-semibold">
+                                    Paid {paid.method ? `(${paid.method})` : ''}
+                                  </span>
+                                  {paid.paidAt && <span className="text-xs text-gray-500">{fmtDate(paid.paidAt)}</span>}
+                                </div>
+                              );
+                            }
+
+                            // Only show text/re-text controls for active families with a phone
+                            if (!canInvoice) return null;
+
+                            // VIEWED · UNPAID
+                            if (activity?.viewedAt) {
+                              return (
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <span className="px-3 py-1.5 bg-yellow-600/30 border border-yellow-600 text-yellow-200 rounded text-sm font-semibold">
+                                    Viewed ({activity.viewCount ?? 0}×)
+                                  </span>
+                                  <span className="text-xs text-gray-500">viewed {fmtDate(activity.viewedAt)}</span>
+                                  <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
+                                    className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 mt-0.5">
+                                    {textingParent === parent.id ? 'Updating...' : 'Re-text'}
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            // SENT · NOT VIEWED
+                            if (activity?.sentAt) {
+                              return (
+                                <div className="flex flex-col items-end gap-0.5">
+                                  <span className="px-3 py-1.5 bg-orange-600/30 border border-orange-600 text-orange-200 rounded text-sm font-semibold">
+                                    Sent · not viewed
+                                  </span>
+                                  <span className="text-xs text-gray-500">sent {fmtDate(activity.sentAt)}</span>
+                                  <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
+                                    className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 mt-0.5">
+                                    {textingParent === parent.id ? 'Updating...' : 'Re-text'}
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            // NOT SENT — the green call-to-action
+                            return (
+                              <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md text-base font-medium transition disabled:opacity-50">
+                                {textingParent === parent.id ? 'Creating...' : 'Text'}
+                              </button>
+                            );
+                          })()}
+                          <button onClick={() => setEditModal(parent)}
+                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-md text-base font-medium transition">
+                            Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
                     </React.Fragment>
                   );
                 })}
@@ -954,7 +1277,99 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* ============ MODALS ============ */}
+      {/* Send Text Modal — shown when user clicks Text/Re-text.
+          Big tap targets for the phone + message, then a Mark Sent button
+          that stamps invoiceActivity.sentAt. */}
+      {sendTextModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-2xl max-w-lg w-full p-6 border border-gray-700">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h2 className="text-2xl font-bold text-white">Text {sendTextModal.parent.firstName}</h2>
+                <p className="text-gray-400 text-sm">${sendTextModal.amount} · {currentMonthLabel}</p>
+              </div>
+              <button onClick={() => setSendTextModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+            </div>
+
+            {/* Phone — tap to copy */}
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Phone (tap to copy)</p>
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(sendTextModal.phone); showNotification('Phone copied', 'success'); } catch {}
+                }}
+                className="w-full bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-gray-700"
+              >
+                {sendTextModal.phone}
+              </button>
+            </div>
+
+            {/* Message — tap to copy */}
+            <div className="mb-4">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Message (tap to copy)</p>
+              <button
+                onClick={async () => {
+                  try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {}
+                }}
+                className="w-full bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-gray-700"
+              >
+                {sendTextModal.message}
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setSendTextModal(null)}
+                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const { parent, amount } = sendTextModal;
+                  try {
+                    const parentRef = doc(db, 'parents', parent.id);
+                    const now = new Date().toISOString();
+                    const previous = parent.invoiceActivity?.[currentMonth];
+                    const existingInv = existingInvoices.get((parent.phone || '').replace(/\D/g, '').replace(/^1/, ''));
+                    const newActivity = {
+                      squareInvoiceId: existingInv?.invoiceId || previous?.squareInvoiceId || '',
+                      publicUrl: existingInv?.publicUrl || previous?.publicUrl || '',
+                      amount,
+                      sentAt: now,
+                      viewedAt: previous?.viewedAt ?? null,
+                      viewCount: previous?.viewCount ?? 0,
+                      lastReminderAt: previous?.sentAt ? now : null,
+                    };
+                    await updateDoc(parentRef, {
+                      lastTexted: now,
+                      [`invoiceActivity.${currentMonth}`]: newActivity,
+                    });
+                    setParents(prev => prev.map(p => p.id === parent.id ? {
+                      ...p,
+                      lastTexted: now,
+                      invoiceActivity: { ...(p.invoiceActivity || {}), [currentMonth]: newActivity },
+                    } : p));
+                    showNotification(`Marked ${parent.firstName} as sent`, 'success');
+                  } catch (err) {
+                    console.error(err);
+                    showNotification('Failed to save', 'error');
+                  }
+                  setSendTextModal(null);
+                }}
+                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
+              >
+                ✓ Mark Sent
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 mt-3 text-center">
+              Tap each field to copy. Paste into your messaging app, send, then tap Mark Sent.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Edit Family Modal */}
       {editModal && (
@@ -1059,7 +1474,6 @@ export default function DashboardPage() {
           onClose={() => setShowBatchSend(false)}
           onClear={() => { setPendingInvoices([]); setShowBatchSend(false); }}
           onSent={(parentId) => setSentInvoices(prev => new Set(prev).add(parentId))}
-          showNotification={showNotification}
         />
       )}
 
@@ -1071,8 +1485,7 @@ export default function DashboardPage() {
   );
 }
 
-// ============ MODAL: EDIT FAMILY ============
-
+// ============ EDIT FAMILY MODAL ============
 function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
   parent: Parent;
   onClose: () => void;
@@ -1102,47 +1515,49 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
     setSaving(false);
   };
 
-  const inputClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors placeholder:text-text-muted w-full";
-  const selectClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors";
-
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-display font-bold">Edit Family</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
-        </div>
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold mb-4">Edit Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name" className={inputClass} />
-            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name" className={inputClass} />
+            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
+              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
+              className="bg-gray-700 rounded px-3 py-2 text-sm" />
           </div>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone" className={inputClass} />
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" className={inputClass} />
-          <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)" className={inputClass} />
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+          <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
-            <select value={team} onChange={e => setTeam(e.target.value as Team)} className={selectClass}>
+            <select value={team} onChange={e => setTeam(e.target.value as Team)}
+              className="bg-gray-700 rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <select value={rateType} onChange={e => setRateType(e.target.value as RateType)} className={selectClass}>
+            <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
+              className="bg-gray-700 rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
-              <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount" className={inputClass} />
+              <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
+                className="bg-gray-700 rounded px-3 py-2 text-sm" />
             )}
           </div>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" className={`${inputClass} resize-none`} rows={2} />
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-between mt-6">
-          <button onClick={onDelete} className="px-4 py-2.5 bg-error/10 hover:bg-error/20 text-error rounded-xl text-sm font-medium transition-all border border-error/20">Delete</button>
+          <button onClick={onDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition">Delete</button>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2.5 bg-surface-elevated hover:bg-border text-text-secondary rounded-xl text-sm transition-all border border-border">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
             <button onClick={handleSave} disabled={saving}
-              className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all text-white disabled:opacity-50 hover:brightness-110"
-              style={{ background: teamConfig.accentColor }}>
+              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -1152,8 +1567,7 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
   );
 }
 
-// ============ MODAL: ADD FAMILY ============
-
+// ============ ADD FAMILY MODAL ============
 function AddFamilyModal({ onClose, onSave }: {
   onClose: () => void;
   onSave: (parent: Partial<Parent>) => Promise<void>;
@@ -1184,45 +1598,47 @@ function AddFamilyModal({ onClose, onSave }: {
     setSaving(false);
   };
 
-  const inputClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors placeholder:text-text-muted w-full";
-  const selectClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors";
-
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-display font-bold">Add Family</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
-        </div>
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold mb-4">Add Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name" className={inputClass} />
-            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name" className={inputClass} />
+            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
+              className="bg-gray-700 rounded px-3 py-2 text-sm" />
+            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
+              className="bg-gray-700 rounded px-3 py-2 text-sm" />
           </div>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone" className={inputClass} />
-          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)" className={inputClass} />
-          <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)" className={inputClass} />
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+          <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+          <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
-            <select value={team} onChange={e => setTeam(e.target.value as Team)} className={selectClass}>
+            <select value={team} onChange={e => setTeam(e.target.value as Team)}
+              className="bg-gray-700 rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
-            <select value={rateType} onChange={e => setRateType(e.target.value as RateType)} className={selectClass}>
+            <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
+              className="bg-gray-700 rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
-              <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount" className={inputClass} />
+              <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
+                className="bg-gray-700 rounded px-3 py-2 text-sm" />
             )}
           </div>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes" className={`${inputClass} resize-none`} rows={2} />
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2.5 bg-surface-elevated hover:bg-border text-text-secondary rounded-xl text-sm transition-all border border-border">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
           <button onClick={handleSave} disabled={saving || !firstName}
-            className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all text-white disabled:opacity-50 hover:brightness-110"
-            style={{ background: teamConfig.accentColor }}>
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
             {saving ? 'Adding...' : 'Add Family'}
           </button>
         </div>
@@ -1231,8 +1647,7 @@ function AddFamilyModal({ onClose, onSave }: {
   );
 }
 
-// ============ MODAL: ADD CHARGE ============
-
+// ============ ADD CHARGE MODAL ============
 function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, onMarkPaid }: {
   parent: Parent;
   catalogItems: CatalogItem[];
@@ -1268,32 +1683,26 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
   };
 
   const existingItems = parent.lineItems || [];
-  const inputClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors placeholder:text-text-muted w-full";
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-display font-bold">Line Items — {parent.firstName} {parent.lastName}</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
-        </div>
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold mb-4">Line Items — {parent.firstName} {parent.lastName}</h2>
 
         {/* Existing Items */}
         {existingItems.length > 0 && (
           <div className="mb-4 space-y-2">
             {existingItems.map(item => (
-              <div key={item.id} className={`flex items-center justify-between p-3 rounded-xl border ${
-                item.status === 'paid' ? 'bg-success/5 border-success/20' : 'bg-surface-elevated border-border'
-              }`}>
+              <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${item.status === 'paid' ? 'bg-green-500/10 border border-green-500/30' : 'bg-gray-700'}`}>
                 <div>
-                  <p className="text-sm font-medium text-foreground">{item.description}</p>
-                  <p className="text-xs text-text-muted">${item.amount} {item.status === 'paid' ? `- Paid (${item.method})` : '- Unpaid'}</p>
+                  <p className="text-sm font-medium">{item.description}</p>
+                  <p className="text-xs text-gray-400">${item.amount} {item.status === 'paid' ? `- Paid (${item.method})` : '- Unpaid'}</p>
                 </div>
                 {item.status !== 'paid' && (
                   <div className="flex gap-1">
-                    {(['square', 'zelle', 'cash', 'forgive'] as PaymentMethod[]).map(m => (
+                    {(['square', 'zelle', 'cash'] as PaymentMethod[]).map(m => (
                       <button key={m} onClick={() => onMarkPaid(item.id, m)}
-                        className={`px-2 py-1 rounded-lg text-xs capitalize transition-colors ${METHOD_BADGES[m].bg} ${METHOD_BADGES[m].text} hover:brightness-125`}>
+                        className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-xs capitalize transition">
                         {m}
                       </button>
                     ))}
@@ -1304,9 +1713,9 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
           </div>
         )}
 
-        {/* Add New */}
+        {/* Add New Item */}
         {showAdd ? (
-          <div className="space-y-3 border-t border-border pt-4">
+          <div className="space-y-3 border-t border-gray-700 pt-4">
             <select value={catalogItemId}
               onChange={e => {
                 const itemId = e.target.value;
@@ -1320,7 +1729,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   }
                 }
               }}
-              className={inputClass}>
+              className="bg-gray-700 rounded px-3 py-2 text-sm w-full">
               <option value="">Select from Square catalog (optional)</option>
               {catalogItems.map(item => (
                 <option key={item.id} value={item.id}>{item.name}</option>
@@ -1335,37 +1744,41 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   const variation = item?.variations.find(v => v.id === varId);
                   if (variation) setAmount(variation.priceMoney.amount);
                 }}
-                className={inputClass}>
+                className="bg-gray-700 rounded px-3 py-2 text-sm w-full">
                 <option value="">Select variation</option>
                 {catalogItems.find(ci => ci.id === catalogItemId)?.variations.map(v => (
                   <option key={v.id} value={v.id}>{v.name} — ${v.priceMoney.amount}</option>
                 ))}
               </select>
             )}
-            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (e.g., Uniform)" className={inputClass} />
-            <input type="number" value={amount || ''} onChange={e => setAmount(Number(e.target.value))} placeholder="Amount" className={inputClass} />
+            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (e.g., Uniform)"
+              className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
+            <input type="number" value={amount || ''} onChange={e => setAmount(Number(e.target.value))} placeholder="Amount"
+              className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
             <div className="flex gap-2">
-              <button onClick={() => setShowAdd(false)} className="px-4 py-2.5 bg-surface-elevated hover:bg-border text-text-secondary rounded-xl text-sm transition-all border border-border">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
               <button onClick={handleSave} disabled={saving || !description || amount <= 0}
-                className="px-4 py-2.5 rounded-xl text-sm font-medium transition-all text-white disabled:opacity-50 hover:brightness-110"
-                style={{ background: teamConfig.accentColor }}>
+                className="px-3 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
                 {saving ? 'Adding...' : 'Add Charge'}
               </button>
             </div>
           </div>
         ) : (
           <button onClick={() => setShowAdd(true)}
-            className="w-full py-3 border border-dashed border-border rounded-xl text-text-muted hover:text-foreground hover:border-text-muted text-sm transition-all">
+            className="w-full py-2 border border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 text-sm transition">
             + Add New Charge
           </button>
         )}
+
+        <div className="flex justify-end mt-4">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Close</button>
+        </div>
       </div>
     </div>
   );
 }
 
-// ============ MODAL: SEND INVOICE ============
-
+// ============ SEND INVOICE MODAL ============
 function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
   parent: Parent;
   monthColumns: { key: string; label: string; shortLabel: string }[];
@@ -1386,11 +1799,13 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [sentResult, setSentResult] = useState<{ invoiceId: string; publicUrl: string | null } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const totalMonthly = includeMonths.length * rate;
   const totalExtras = unpaidExtras.filter(li => includeExtras.includes(li.id)).reduce((s, li) => s + li.amount, 0);
   const total = totalMonthly + totalExtras;
 
+  // Update message when due date changes
   const handleDueDateChange = (newDate: string) => {
     setDueDate(newDate);
     setMessage(getDefaultMessage(includeMonths));
@@ -1400,12 +1815,17 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
     setSending(true);
     setError('');
     try {
-      const lineItems: Array<{ description: string; amount: number; quantity: number }> = [];
+      // Build line items for the API
+      const lineItems: Array<{ catalogItemVariationId?: string; description?: string; amount?: number; quantity?: number }> = [];
+
+      // Add monthly fee line items
       for (const month of includeMonths) {
         const [y, mo] = month.split('-');
         const monthLabel = new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short', year: 'numeric' });
         lineItems.push({ description: `Monthly Fee - ${monthLabel}`, amount: rate, quantity: 1 });
       }
+
+      // Add extra line items
       for (const extra of unpaidExtras.filter(li => includeExtras.includes(li.id))) {
         lineItems.push({ description: extra.description, amount: extra.amount, quantity: 1 });
       }
@@ -1414,9 +1834,14 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: parent.phone, customerId: parent.squareCustomerId, lineItems, message, dueDate,
+          phone: parent.phone,
+          customerId: parent.squareCustomerId,
+          lineItems,
+          message,
+          dueDate,
           playerName: (parent.playerNames || []).join(', ') || parent.firstName,
-          parentFirstName: parent.firstName, parentLastName: parent.lastName,
+          parentFirstName: parent.firstName,
+          parentLastName: parent.lastName,
           billingMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
         }),
       });
@@ -1424,13 +1849,19 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
       const data = await response.json();
       if (data.success) {
         setSentResult({ invoiceId: data.invoiceId, publicUrl: null });
+        // Auto-queue for batch send (draft — not published yet)
         if (data.invoiceId && parent.phone) {
           setTimeout(() => {
             onQueue({
-              parentId: parent.id, firstName: parent.firstName, lastName: parent.lastName,
-              phone: parent.phone || '', invoiceId: data.invoiceId, total, months: includeMonths,
+              parentId: parent.id,
+              firstName: parent.firstName,
+              lastName: parent.lastName,
+              phone: parent.phone || '',
+              invoiceId: data.invoiceId,
+              total,
+              months: includeMonths,
             });
-          }, 1500);
+          }, 1500); // Brief delay so user sees success message
         }
       } else {
         setError(data.error || 'Failed to send invoice');
@@ -1442,56 +1873,51 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
     }
   };
 
-  const inputClass = "bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-foreground focus:border-accent focus:outline-none transition-colors w-full";
-
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-display font-bold">Send Invoice</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
-        </div>
-        <p className="text-text-muted text-sm mb-5">{parent.firstName} {parent.lastName} — {parent.phone}</p>
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold mb-1">Send Invoice</h2>
+        <p className="text-gray-400 text-sm mb-4">{parent.firstName} {parent.lastName} — {parent.phone}</p>
 
-        {/* Months */}
+        {/* Months to include */}
         <div className="mb-4">
-          <p className="text-sm font-medium text-text-secondary mb-2">Monthly Fees (${rate}/mo)</p>
-          <div className="space-y-1.5">
+          <p className="text-sm font-medium text-gray-300 mb-2">Monthly Fees (${rate}/mo)</p>
+          <div className="space-y-1">
             {monthColumns.map(col => {
               const isPaid = payments[col.key]?.status === 'paid';
               if (isPaid) return null;
               const included = includeMonths.includes(col.key);
               return (
-                <label key={col.key} className="flex items-center gap-2 text-sm cursor-pointer text-foreground">
+                <label key={col.key} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={included}
                     onChange={e => setIncludeMonths(prev =>
                       e.target.checked ? [...prev, col.key] : prev.filter(m => m !== col.key)
                     )}
-                    className="rounded accent-accent" />
+                    className="rounded" />
                   <span>{col.label}</span>
-                  <span className="text-text-muted">${rate}</span>
+                  <span className="text-gray-500">${rate}</span>
                 </label>
               );
             })}
           </div>
         </div>
 
-        {/* Extras */}
+        {/* Extras to include */}
         {unpaidExtras.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm font-medium text-text-secondary mb-2">Extra Charges</p>
-            <div className="space-y-1.5">
+            <p className="text-sm font-medium text-gray-300 mb-2">Extra Charges</p>
+            <div className="space-y-1">
               {unpaidExtras.map(item => {
                 const included = includeExtras.includes(item.id);
                 return (
-                  <label key={item.id} className="flex items-center gap-2 text-sm cursor-pointer text-foreground">
+                  <label key={item.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input type="checkbox" checked={included}
                       onChange={e => setIncludeExtras(prev =>
                         e.target.checked ? [...prev, item.id] : prev.filter(id => id !== item.id)
                       )}
-                      className="rounded accent-accent" />
+                      className="rounded" />
                     <span>{item.description}</span>
-                    <span className="text-text-muted">${item.amount}</span>
+                    <span className="text-gray-500">${item.amount}</span>
                   </label>
                 );
               })}
@@ -1500,18 +1926,18 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         )}
 
         {/* Total */}
-        <div className="bg-surface-elevated rounded-xl p-4 mb-4 border border-border">
+        <div className="bg-gray-700 rounded-lg p-3 mb-4">
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Monthly ({includeMonths.length} month{includeMonths.length !== 1 ? 's' : ''})</span>
+            <span className="text-gray-400">Monthly ({includeMonths.length} month{includeMonths.length !== 1 ? 's' : ''})</span>
             <span>${totalMonthly}</span>
           </div>
           {totalExtras > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-text-muted">Extras</span>
+              <span className="text-gray-400">Extras</span>
               <span>${totalExtras}</span>
             </div>
           )}
-          <div className="flex justify-between font-display font-bold mt-2 pt-2 border-t border-border">
+          <div className="flex justify-between font-bold mt-1 pt-1 border-t border-gray-600">
             <span>Total</span>
             <span>${total}</span>
           </div>
@@ -1519,28 +1945,32 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
 
         {/* Due Date */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-text-secondary block mb-1.5">Due Date</label>
-          <input type="date" value={dueDate} onChange={e => handleDueDateChange(e.target.value)} className={inputClass} />
+          <label className="text-sm font-medium text-gray-300 block mb-1">Due Date</label>
+          <input type="date" value={dueDate} onChange={e => handleDueDateChange(e.target.value)}
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" />
         </div>
 
         {/* Message */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-text-secondary block mb-1.5">Message</label>
-          <textarea value={message} onChange={e => setMessage(e.target.value)} className={`${inputClass} resize-none`} rows={4} />
+          <label className="text-sm font-medium text-gray-300 block mb-1">Message</label>
+          <textarea value={message} onChange={e => setMessage(e.target.value)}
+            className="bg-gray-700 rounded px-3 py-2 text-sm w-full" rows={4} />
         </div>
 
-        {error && <p className="text-error text-sm mb-4">{error}</p>}
+        {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
         {sentResult ? (
-          <div className="bg-success/10 border border-success/30 rounded-xl p-5 text-center">
-            <p className="text-success font-display font-bold text-lg mb-1">Draft Created!</p>
-            <p className="text-success/70 text-sm">Queued for batch send — parents can&apos;t see this yet</p>
+          <div className="space-y-3">
+            <div className="bg-green-600/20 border border-green-600 rounded-lg p-4 text-center">
+              <p className="text-green-400 font-bold text-lg mb-1">Draft Created!</p>
+              <p className="text-green-300 text-sm">Queued for batch send — parents can&apos;t see this yet</p>
+            </div>
           </div>
         ) : (
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="px-4 py-2.5 bg-surface-elevated hover:bg-border text-text-secondary rounded-xl text-sm transition-all border border-border">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
             <button onClick={handleSend} disabled={sending || total === 0}
-              className="px-4 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 rounded-xl text-sm font-medium transition-all disabled:opacity-50">
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition disabled:opacity-50">
               {sending ? 'Creating...' : `Create Invoice ($${total})`}
             </button>
           </div>
@@ -1550,14 +1980,12 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
   );
 }
 
-// ============ MODAL: BATCH SEND ============
-
-function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }: {
+// ============ BATCH SEND MODAL ============
+function BatchSendModal({ invoices, onClose, onClear, onSent }: {
   invoices: Array<{ parentId: string; firstName: string; lastName: string; phone: string; invoiceId: string; total: number; months: string[]; publicUrl?: string }>;
   onClose: () => void;
   onClear: () => void;
   onSent: (parentId: string) => void;
-  showNotification: (message: string, type: 'success' | 'error') => void;
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sentCount, setSentCount] = useState(0);
@@ -1584,7 +2012,9 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
     setSentCount(newSentCount);
     setAwaitingNext(false);
     setCopiedMessage('');
-    if (newSentCount < invoices.length && currentIndex < invoices.length - 1) {
+    if (newSentCount === invoices.length) {
+      // All done
+    } else if (currentIndex < invoices.length - 1) {
       setCurrentIndex(prev => prev + 1);
     }
   };
@@ -1592,6 +2022,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
   const handleSendAndNext = async () => {
     let publicUrl = current.publicUrl;
 
+    // Normal mode: publish draft first
     if (!publicUrl) {
       setPublishing(true);
       setPublishError('');
@@ -1617,6 +2048,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
       }
     }
 
+    // Copy message to clipboard and show "awaiting next" state
     const smsBody = buildSmsBody(current, publicUrl!);
     try {
       await navigator.clipboard.writeText(smsBody);
@@ -1625,114 +2057,117 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
       setCopiedMessage(smsBody);
     }
 
+    // Open Phone Link via sms: using a hidden link click (doesn't navigate away)
     const normalizedPhone = current.phone.replace(/\D/g, '');
     const smsLink = document.createElement('a');
-    smsLink.href = `sms:${normalizedPhone}?body=${encodeURIComponent(smsBody)}`;
+    smsLink.href = `sms:${normalizedPhone}`;
     smsLink.click();
 
     setAwaitingNext(true);
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-surface rounded-2xl border border-border p-6 w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-display font-bold">{isResendMode ? 'Re-send Texts' : 'Send All Texts'}</h2>
-          <button onClick={onClose} className="text-text-muted hover:text-foreground transition-colors"><X className="w-5 h-5" /></button>
-        </div>
-        <p className="text-text-muted text-sm mb-5">
+    <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+        <h2 className="text-lg font-bold mb-1">{isResendMode ? 'Re-send Texts' : 'Send All Texts'}</h2>
+        <p className="text-gray-400 text-sm mb-4">
           {isResendMode
             ? `${invoices.length} published invoices — tap Send to open SMS, then tap Next after sending`
             : `${invoices.length} draft invoices — tap Send to publish & text each family`
           }
         </p>
 
-        {/* Progress */}
-        <div className="w-full bg-surface-elevated rounded-full h-2.5 mb-3 border border-border">
-          <div className="h-2.5 rounded-full transition-all duration-300 bg-success"
-            style={{ width: `${(sentCount / invoices.length) * 100}%` }} />
+        {/* Progress bar */}
+        <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
+          <div
+            className="bg-green-500 h-3 rounded-full transition-all duration-300"
+            style={{ width: `${(sentCount / invoices.length) * 100}%` }}
+          />
         </div>
-        <p className="text-xs text-text-muted mb-5">{sentCount} / {invoices.length} sent</p>
+        <p className="text-sm text-gray-400 mb-4">{sentCount} / {invoices.length} sent</p>
 
         {isComplete ? (
           <div className="space-y-4">
-            <div className="bg-success/10 border border-success/30 rounded-xl p-6 text-center">
-              <p className="text-success font-display font-bold text-2xl mb-1">All Done!</p>
-              <p className="text-success/70">All {invoices.length} invoices texted</p>
+            <div className="bg-green-600/20 border border-green-600 rounded-lg p-6 text-center">
+              <p className="text-green-400 font-bold text-2xl mb-1">All Done!</p>
+              <p className="text-green-300">All {invoices.length} invoices texted</p>
             </div>
             <button onClick={onClear}
-              className="w-full px-4 py-3 bg-surface-elevated hover:bg-border text-foreground rounded-xl font-medium transition-all border border-border">
+              className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium transition">
               Clear Queue & Close
             </button>
           </div>
         ) : current ? (
           <div className="space-y-4">
-            <div className="bg-surface-elevated rounded-xl p-4 border border-border">
+            <div className="bg-gray-700 rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-display font-bold text-lg">{current.firstName} {current.lastName}</p>
-                  <p className="text-text-muted text-sm">{current.phone}</p>
+                  <p className="font-bold text-lg">{current.firstName} {current.lastName}</p>
+                  <p className="text-gray-400 text-sm">{current.phone}</p>
                 </div>
-                <p className="text-xl font-display font-bold text-success">${current.total}</p>
+                <p className="text-xl font-bold text-green-400">${current.total}</p>
               </div>
               {current.months.length > 0 && (
-                <p className="text-xs text-text-muted mt-1">
+                <p className="text-sm text-gray-400 mt-1">
                   {current.months.map(m => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short' }); }).join(', ')}
                 </p>
               )}
-              {current.publicUrl && <p className="text-xs text-blue-400 mt-1 truncate">Already published</p>}
+              {current.publicUrl && (
+                <p className="text-xs text-blue-400 mt-1 truncate">Already published</p>
+              )}
             </div>
 
-            {publishError && <p className="text-error text-sm">{publishError}</p>}
+            {publishError && <p className="text-red-400 text-sm">{publishError}</p>}
 
             {awaitingNext ? (
               <div className="space-y-3">
-                <div className="bg-warning/10 border border-warning/30 rounded-xl p-4">
-                  <p className="text-warning font-bold text-lg mb-2">Message copied! Paste in Phone Link</p>
-                  <p className="text-warning/70 text-sm mb-3">1. Phone Link should be open to {current.firstName}&apos;s conversation<br/>2. Tap the message box and <strong>Ctrl+V</strong> to paste<br/>3. Hit Send<br/>4. Come back here and click Next</p>
+                <div className="bg-yellow-600/20 border border-yellow-600 rounded-lg p-4">
+                  <p className="text-yellow-300 font-bold text-lg mb-2">Message copied! Paste in Phone Link</p>
+                  <p className="text-yellow-200 text-sm mb-3">1. Phone Link should be open to {current.firstName}&apos;s conversation<br/>2. Tap the message box and <strong>Ctrl+V</strong> to paste<br/>3. Hit Send<br/>4. Come back here and click Next</p>
                   {copiedMessage && (
-                    <div className="bg-surface rounded-lg p-2 text-xs text-text-secondary max-h-20 overflow-y-auto border border-border">
+                    <div className="bg-gray-800 rounded p-2 text-xs text-gray-300 max-h-20 overflow-y-auto border border-gray-600">
                       {copiedMessage}
                     </div>
                   )}
                   <button onClick={async () => {
                     if (copiedMessage) {
                       await navigator.clipboard.writeText(copiedMessage);
-                      showNotification('Message re-copied!', 'success');
                     }
                   }}
-                    className="mt-2 px-3 py-1.5 bg-surface-elevated hover:bg-border rounded-lg text-xs text-text-muted transition-colors border border-border">
+                    className="mt-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 rounded text-xs text-gray-300 transition">
                     Re-copy message
                   </button>
                 </div>
                 <button onClick={advanceToNext}
-                  className="w-full px-4 py-5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-xl text-xl font-display font-bold transition-all text-blue-400">
+                  className="w-full px-4 py-5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xl font-bold transition text-white">
                   Next &rarr;
                 </button>
               </div>
             ) : (
               <button onClick={handleSendAndNext} disabled={publishing}
-                className="w-full px-4 py-5 bg-success/10 hover:bg-success/20 border border-success/30 rounded-xl text-xl font-display font-bold transition-all text-success disabled:opacity-50">
+                className="w-full px-4 py-5 bg-green-600 hover:bg-green-700 rounded-lg text-xl font-bold transition text-white disabled:opacity-50">
                 {publishing ? 'Publishing...' : `Send Text to ${current.firstName} →`}
               </button>
             )}
 
             {!awaitingNext && (
               <button onClick={() => {
-                if (currentIndex < invoices.length - 1) setCurrentIndex(prev => prev + 1);
+                if (currentIndex < invoices.length - 1) {
+                  setCurrentIndex(prev => prev + 1);
+                }
               }}
-                className="w-full px-4 py-2 bg-surface-elevated hover:bg-border rounded-xl text-sm text-text-muted transition-all border border-border">
+                className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm text-gray-300 transition">
                 Skip
               </button>
             )}
 
-            <div className="border-t border-border pt-3 mt-2">
-              <p className="text-xs text-text-muted mb-2">Queue ({invoices.length - currentIndex} remaining)</p>
+            <div className="border-t border-gray-700 pt-3 mt-2">
+              <p className="text-xs text-gray-500 mb-2">Queue ({invoices.length - currentIndex} remaining)</p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {invoices.slice(currentIndex).map((inv, i) => (
-                  <div key={inv.parentId} className={`flex justify-between text-sm px-3 py-1.5 rounded-lg ${i === 0 ? 'bg-surface-elevated' : ''}`}>
-                    <span className={i === 0 ? 'text-foreground font-medium' : 'text-text-muted'}>{inv.firstName} {inv.lastName}</span>
-                    <span className="text-text-muted">${inv.total}</span>
+                  <div key={inv.parentId} className={`flex justify-between text-sm px-2 py-1 rounded ${i === 0 ? 'bg-gray-600' : ''}`}>
+                    <span className={i === 0 ? 'text-white font-medium' : 'text-gray-400'}>{inv.firstName} {inv.lastName}</span>
+                    <span className="text-gray-500">${inv.total}</span>
                   </div>
                 ))}
               </div>
@@ -1741,8 +2176,12 @@ function BatchSendModal({ invoices, onClose, onClear, onSent, showNotification }
         ) : null}
 
         <div className="flex justify-between mt-4">
-          <button onClick={onClose} className="px-4 py-2 text-text-muted hover:text-foreground text-sm transition-colors">Minimize</button>
-          <button onClick={onClear} className="px-4 py-2 text-error hover:text-red-300 text-sm transition-colors">Clear Queue</button>
+          <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white text-sm transition">
+            Minimize
+          </button>
+          <button onClick={onClear} className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition">
+            Clear Queue
+          </button>
         </div>
       </div>
     </div>
