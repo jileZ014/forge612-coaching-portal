@@ -168,8 +168,11 @@ export interface RosterPlayer {
   firstName: string;
   lastName: string;
   age: number | null;
+  birthday: string;
   phone: string;
-  parentName: string;
+  parentFirstName: string;
+  parentLastName: string;
+  parentName?: string;
   grade: string;
   highSchool: string;
   gradYear: number | null;

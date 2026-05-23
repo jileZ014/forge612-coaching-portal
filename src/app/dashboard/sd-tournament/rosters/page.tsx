@@ -85,9 +85,10 @@ export default function RosterAdminPage() {
   const totals = useMemo(() => {
     const submitted = TEAMS.filter((t) => byTeam[t.code].length > 0).length;
     const players = roster.length;
-    const complete = roster.filter(
-      (p) => p.firstName && p.lastName && p.age && p.phone && p.parentName && p.grade,
-    ).length;
+    const complete = roster.filter((p) => {
+      const hasParent = (p.parentFirstName && p.parentLastName) || p.parentName;
+      return p.firstName && p.lastName && p.age && p.birthday && p.phone && hasParent && p.grade;
+    }).length;
     return { submitted, players, complete };
   }, [byTeam, roster]);
 
@@ -261,15 +262,28 @@ export default function RosterAdminPage() {
                         const name =
                           [p.firstName, p.lastName].filter(Boolean).join(' ') ||
                           `Player ${i + 1}`;
+                        const parentDisplay =
+                          [p.parentFirstName, p.parentLastName].filter(Boolean).join(' ') ||
+                          p.parentName ||
+                          '';
                         const meta = [
                           p.age ? `age ${p.age}` : null,
+                          p.birthday || null,
                           p.grade ? p.grade : null,
                           p.highSchool || null,
                         ]
                           .filter(Boolean)
                           .join(' · ');
+                        const hasParent =
+                          (p.parentFirstName && p.parentLastName) || p.parentName;
                         const complete =
-                          p.firstName && p.lastName && p.age && p.phone && p.parentName && p.grade;
+                          p.firstName &&
+                          p.lastName &&
+                          p.age &&
+                          p.birthday &&
+                          p.phone &&
+                          hasParent &&
+                          p.grade;
                         return (
                           <li
                             key={p.id}
@@ -288,10 +302,10 @@ export default function RosterAdminPage() {
                                   {meta}
                                 </div>
                               )}
-                              {(p.phone || p.parentName) && (
+                              {(p.phone || parentDisplay) && (
                                 <div className="text-[11px] text-text-muted truncate">
-                                  {p.parentName ? p.parentName : ''}
-                                  {p.parentName && p.phone ? ' · ' : ''}
+                                  {parentDisplay}
+                                  {parentDisplay && p.phone ? ' · ' : ''}
                                   {p.phone}
                                 </div>
                               )}

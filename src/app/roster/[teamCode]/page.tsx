@@ -36,8 +36,10 @@ type FieldKey =
   | 'firstName'
   | 'lastName'
   | 'age'
+  | 'birthday'
   | 'phone'
-  | 'parentName'
+  | 'parentFirstName'
+  | 'parentLastName'
   | 'grade'
   | 'highSchool'
   | 'gradYear';
@@ -96,8 +98,10 @@ export default function CoachRosterPage() {
         firstName: '',
         lastName: '',
         age: null,
+        birthday: '',
         phone: '',
-        parentName: '',
+        parentFirstName: '',
+        parentLastName: '',
         grade: '',
         highSchool: '',
         gradYear: null,
@@ -185,7 +189,15 @@ export default function CoachRosterPage() {
       return v === null || v === undefined ? '' : String(v);
     }
     const v = p[field];
-    return v === null || v === undefined ? '' : String(v);
+    if (v !== null && v !== undefined && v !== '') return String(v);
+    // Legacy fallback: split combined parentName into first/last for entries
+    // created before parentFirstName/parentLastName existed. Coach can edit.
+    if ((field === 'parentFirstName' || field === 'parentLastName') && p.parentName) {
+      const parts = p.parentName.trim().split(/\s+/);
+      if (field === 'parentFirstName') return parts[0] ?? '';
+      return parts.slice(1).join(' ');
+    }
+    return '';
   }
 
   function setDraft(playerId: string, field: FieldKey, value: string) {
@@ -321,6 +333,14 @@ export default function CoachRosterPage() {
                       max={19}
                     />
                     <RosterField
+                      label="Birthday"
+                      value={getValue(p, 'birthday')}
+                      onChange={(v) => setDraft(p.id, 'birthday', v)}
+                      onBlur={() => saveField(p, 'birthday')}
+                      type="date"
+                      dataField="birthday"
+                    />
+                    <RosterField
                       label="Phone"
                       value={getValue(p, 'phone')}
                       onChange={(v) => setDraft(p.id, 'phone', v)}
@@ -330,14 +350,21 @@ export default function CoachRosterPage() {
                       placeholder="(555) 555-1234"
                       dataField="phone"
                       autoComplete="tel"
+                      className="col-span-2"
                     />
                     <RosterField
-                      label="Parent name"
-                      value={getValue(p, 'parentName')}
-                      onChange={(v) => setDraft(p.id, 'parentName', v)}
-                      onBlur={() => saveField(p, 'parentName')}
-                      dataField="parentName"
-                      className="col-span-2"
+                      label="Parent first name"
+                      value={getValue(p, 'parentFirstName')}
+                      onChange={(v) => setDraft(p.id, 'parentFirstName', v)}
+                      onBlur={() => saveField(p, 'parentFirstName')}
+                      dataField="parentFirstName"
+                    />
+                    <RosterField
+                      label="Parent last name"
+                      value={getValue(p, 'parentLastName')}
+                      onChange={(v) => setDraft(p.id, 'parentLastName', v)}
+                      onBlur={() => saveField(p, 'parentLastName')}
+                      dataField="parentLastName"
                     />
                     <div className="flex flex-col gap-1">
                       <label className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
