@@ -162,6 +162,21 @@ export interface FamilyDocument {
   uploadedAt: string;
 }
 
+export interface RosterPlayer {
+  id: string;
+  teamCode: string;
+  firstName: string;
+  lastName: string;
+  age: number | null;
+  phone: string;
+  parentName: string;
+  grade: string;
+  highSchool: string;
+  gradYear: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type VerificationStatus = 'missing' | 'verified';
 
 export interface SdVerificationRecord {

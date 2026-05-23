@@ -62,5 +62,19 @@ service cloud.firestore {
     match /teams/{teamId}/documents/{docId} {
       allow read, write: if isCoach(teamId);
     }
+
+    // SD Tournament verification checklist — coach-only writes from /dashboard/sd-tournament/verification
+    match /teams/{teamId}/sdTournamentVerification/{paymentId} {
+      allow read, write: if isCoach(teamId);
+    }
+
+    // SD Tournament roster — public read+write so the 6 head coaches can submit
+    // their team's roster via shared link /roster/{teamCode} without an account.
+    // Trust model: links are shared only with the 6 coaches Jonas knows; data is
+    // basic roster info (name, age, grade, HS, parent contact) already shared
+    // with tournament organizers. Tighten with team-code tokens if needed later.
+    match /teams/{teamId}/sdTournamentRoster/{playerId} {
+      allow read, write: if true;
+    }
   }
 }

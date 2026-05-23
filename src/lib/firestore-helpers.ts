@@ -26,6 +26,7 @@ import type {
   FamilyDocument,
   LifecycleStage,
   SdVerificationRecord,
+  RosterPlayer,
 } from './types';
 
 const TEAM_ID = teamConfig.teamId;
@@ -207,6 +208,38 @@ export async function addDocument(data: Omit<FamilyDocument, 'id'>) {
 
 export async function deleteDocument(id: string) {
   await deleteDoc(doc(db, 'teams', TEAM_ID, 'documents', id));
+}
+
+const sdRosterCol = () => collection(db, 'teams', TEAM_ID, 'sdTournamentRoster');
+
+export async function getRosterByTeam(teamCode: string): Promise<RosterPlayer[]> {
+  const snap = await getDocs(query(sdRosterCol(), where('teamCode', '==', teamCode)));
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() } as RosterPlayer));
+  return rows.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+}
+
+export async function getAllRosters(): Promise<RosterPlayer[]> {
+  const snap = await getDocs(sdRosterCol());
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() } as RosterPlayer));
+  return rows.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+}
+
+export async function addRosterPlayer(
+  data: Omit<RosterPlayer, 'id' | 'createdAt' | 'updatedAt'>,
+) {
+  const now = Date.now();
+  return addDoc(sdRosterCol(), { ...data, createdAt: now, updatedAt: now } as DocumentData);
+}
+
+export async function updateRosterPlayer(id: string, data: Partial<RosterPlayer>) {
+  await updateDoc(doc(db, 'teams', TEAM_ID, 'sdTournamentRoster', id), {
+    ...data,
+    updatedAt: Date.now(),
+  } as DocumentData);
+}
+
+export async function deleteRosterPlayer(id: string) {
+  await deleteDoc(doc(db, 'teams', TEAM_ID, 'sdTournamentRoster', id));
 }
 
 const sdVerificationCol = () => collection(db, 'teams', TEAM_ID, 'sdTournamentVerification');
