@@ -4,6 +4,7 @@ import {
   getDocs,
   getDoc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -24,6 +25,7 @@ import type {
   Communication,
   FamilyDocument,
   LifecycleStage,
+  SdVerificationRecord,
 } from './types';
 
 const TEAM_ID = teamConfig.teamId;
@@ -205,6 +207,33 @@ export async function addDocument(data: Omit<FamilyDocument, 'id'>) {
 
 export async function deleteDocument(id: string) {
   await deleteDoc(doc(db, 'teams', TEAM_ID, 'documents', id));
+}
+
+const sdVerificationCol = () => collection(db, 'teams', TEAM_ID, 'sdTournamentVerification');
+
+export async function getSdVerificationRecords(): Promise<SdVerificationRecord[]> {
+  const snap = await getDocs(sdVerificationCol());
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as SdVerificationRecord));
+}
+
+export async function upsertSdVerification(
+  paymentId: string,
+  data: Partial<Omit<SdVerificationRecord, 'id'>>,
+) {
+  const ref = doc(db, 'teams', TEAM_ID, 'sdTournamentVerification', paymentId);
+  const existing = await getDoc(ref);
+  const now = Date.now();
+  if (existing.exists()) {
+    await updateDoc(ref, { ...data, updatedAt: now } as DocumentData);
+  } else {
+    await setDoc(ref, {
+      paymentId,
+      birthCertStatus: 'missing',
+      gradeProofStatus: 'missing',
+      ...data,
+      updatedAt: now,
+    } as DocumentData);
+  }
 }
 
 const scheduleCol = () => collection(db, 'teams', TEAM_ID, 'schedule');

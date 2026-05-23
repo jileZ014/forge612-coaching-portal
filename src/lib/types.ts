@@ -161,3 +161,20 @@ export interface FamilyDocument {
   uploadedBy: string;
   uploadedAt: string;
 }
+
+export type VerificationStatus = 'missing' | 'verified';
+
+export interface SdVerificationRecord {
+  id: string;
+  paymentId: string;
+  playerName: string;
+  team: string;
+  playerCount: number;
+  birthCertStatus: VerificationStatus;
+  birthCertCheckedAt?: number;
+  gradeProofStatus: VerificationStatus;
+  gradeProofCheckedAt?: number;
+  notes?: string;
+  updatedAt: number;
+  updatedBy?: string;
+}
