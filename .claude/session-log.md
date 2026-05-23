@@ -1,5 +1,25 @@
 # forge612-coaching-portal session log
 
+## 2026-05-23 06:56 — Added birthday + split parent name into first/last
+**Session type:** VS Code
+**ROI tag:** REVENUE
+- Jonas: "need to add a birthday field and parent first, last name field"
+- Pre-check: Stefon (15u) had ALREADY filled in 5 roster entries overnight. Queried Firestore via gcloud-token REST pattern to verify before making the field changes. Notable rows: "Stefon White" (parent: "Stefon jermaine White sr") + "Troy LBotley" (parent: "Jessy burley") + 1 in 14u (Jayden — probably misplaced).
+- Added fields to RosterPlayer type: `birthday: string` (YYYY-MM-DD), `parentFirstName: string`, `parentLastName: string`. Kept `parentName?: string` as optional legacy fallback for already-submitted rows.
+- Public roster page ([roster/[teamCode]/page.tsx](../src/app/roster/[teamCode]/page.tsx)): birthday `<input type=date>` paired with age, parent-first / parent-last in 2-col grid replacing combined Parent name. Phone moved to col-span-2.
+- `getValue` for parentFirstName/parentLastName falls back to splitting parentName on whitespace when new fields are empty — so Stefon sees his existing data preserved in the new UI shape. When he edits + saves, the new fields persist.
+- Admin overview completeness check + display updated to require birthday + use parentFirst/parentLast (with parentName fallback).
+- Verified via Playwright + getComputedStyle on `/roster/15u-white`: all 10 fields render, Stefon's row auto-split correctly (parentFirstName="Stefon", parentLastName="jermaine White sr" — slightly messy but coach can clean up).
+- Committed [3bdac65](https://github.com/jileZ014/forge612-coaching-portal/commit/3bdac65) on master, pushed.
+
+**Open items:**
+- Existing 5 entries still have `parentName` populated but blank `parentFirstName`/`parentLastName` in DB. Once Stefon (or whoever edits) saves any field, the auto-split values land in the new fields. No bulk-migration needed.
+- Watch admin overview for new submissions using the expanded form.
+
+**To continue:** Coaches resume filling rosters with the new fields. Jonas watches admin overview.
+
+---
+
 ## 2026-05-23 00:25 — Input text-color bug fix + Firebase password set (admin REST via gcloud token)
 **Session type:** VS Code
 **ROI tag:** MAINTENANCE
