@@ -1,5 +1,22 @@
 # forge612-coaching-portal session log
 
+## 2026-05-23 00:25 — Input text-color bug fix + Firebase password set (admin REST via gcloud token)
+**Session type:** VS Code
+**ROI tag:** MAINTENANCE
+- Jonas: "change the font, you cannot see the font in the entry as it is dark blue on black background"
+- Root cause: [globals.css:44-49](../src/app/globals.css#L44-L49) had an UNLAYERED `input, textarea, select { color: #0F172A }` "safety net" for CRM v0 light-bg forms. Unlayered CSS beats Tailwind utility classes regardless of class specificity → `text-foreground` on my SD-tournament dark-bg inputs lost, rendering dark-blue-on-near-black. Fix: wrapped the rule in `@layer base { ... }` so Tailwind utilities (which live in the utilities layer, ordered AFTER base) override correctly. CRM family-hub inputs still get slate-900 since they don't add a text-color utility class — verified at [families/[id]/page.tsx:323-373](../src/app/dashboard/families/[id]/page.tsx#L323) where all CRM inputs already have explicit `text-slate-900` classes.
+- Verified via Playwright + `getComputedStyle`: input text now `rgb(250, 250, 250)` (#FAFAFA, near-white), bg `rgb(10, 10, 10)` (#0A0A0A, near-black). High contrast, readable.
+- Deployed via `npx netlify deploy --prod --build` — the recurring chunk-hash workaround.
+
+Earlier this session (logged in az-flight/ops): Set Firebase Auth password for `team@azflighthoops.com` via Firebase Identity Toolkit Admin REST `accounts:update` using `gcloud auth print-access-token` + `x-goog-user-project: flight-pay-az` header. Bypassed the need for ADC setup or a service account JSON. **Save this pattern** in [scripts/create-coach-user.mjs](../scripts/create-coach-user.mjs) (ADC path, kept as fallback).
+
+**Open items:**
+- Jonas should be logged in now and seeing the rosters page. If anything else looks off (other input affordances, dark spots), report back.
+
+**To continue:** Watch [admin overview](https://flight-pay.netlify.app/dashboard/sd-tournament/rosters) for incoming coach submissions.
+
+---
+
 ## 2026-05-22 18:15 — SD Tournament Team Roster intake links shipped (6 coaches)
 **Session type:** VS Code
 **ROI tag:** REVENUE
