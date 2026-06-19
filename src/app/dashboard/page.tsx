@@ -1186,7 +1186,7 @@ export default function Dashboard() {
                       <td className="px-3 py-3 text-center">
                         <select value={status}
                           onChange={e => updateStatus(parent.id, e.target.value as ParentStatus)}
-                          className={`text-sm font-semibold rounded-full px-3 py-1.5 border-0 cursor-pointer ${STATUS_COLORS[status].bg} ${STATUS_COLORS[status].text}`}>
+                          className={`text-sm font-semibold rounded-full px-3 py-1.5 border-0 cursor-pointer ${(STATUS_COLORS[status] || STATUS_COLORS.inactive).bg} ${(STATUS_COLORS[status] || STATUS_COLORS.inactive).text}`}>
                           <option value="active">Active</option>
                           <option value="on_break">On Break</option>
                           <option value="exempt">Exempt</option>
