@@ -100,6 +100,7 @@ export default function Dashboard() {
     message: string;
     amount: number;
   } | null>(null);
+  const [sendMethod, setSendMethod] = useState<'text' | 'email'>('text');
 
   const monthColumns = getMonthColumns();
   const currentMonth = monthColumns[2].key;
@@ -780,6 +781,7 @@ export default function Dashboard() {
     const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${amount} is ready. Pay here: ${trackUrl} - Coach Jonas`;
 
     // Stash invoice details on the modal so the user can confirm-sent later
+    setSendMethod('text');
     setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount });
     setTextingParent(null);
   };
@@ -1297,37 +1299,81 @@ export default function Dashboard() {
           <div className="bg-[#141418] rounded-2xl max-w-lg w-full p-6 border border-white/[0.09]">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-2xl font-bold text-white">Text {sendTextModal.parent.firstName}</h2>
+                <h2 className="text-2xl font-bold text-white">Send to {sendTextModal.parent.firstName}</h2>
                 <p className="text-white/55 text-sm">${sendTextModal.amount} · {currentMonthLabel}</p>
               </div>
               <button onClick={() => setSendTextModal(null)} className="text-white/55 hover:text-white text-2xl leading-none">×</button>
             </div>
 
-            {/* Phone — tap to copy */}
-            <div className="mb-4">
-              <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Phone (tap to copy)</p>
-              <button
-                onClick={async () => {
-                  try { await navigator.clipboard.writeText(sendTextModal.phone); showNotification('Phone copied', 'success'); } catch {}
-                }}
-                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-white/[0.09]"
-              >
-                {sendTextModal.phone}
-              </button>
+            {/* Text / Email toggle */}
+            <div className="flex bg-[#0A0A0A] border border-white/[0.09] rounded-lg p-1 mb-5">
+              {(['text', 'email'] as const).map(m => {
+                const disabled = m === 'email' && !sendTextModal.parent.email;
+                return (
+                  <button key={m} onClick={() => { if (!disabled) setSendMethod(m); }} disabled={disabled}
+                    className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${sendMethod === m ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>
+                    {m === 'text' ? 'Text' : (sendTextModal.parent.email ? 'Email' : 'Email (none on file)')}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Message — tap to copy */}
-            <div className="mb-4">
-              <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Message (tap to copy)</p>
-              <button
-                onClick={async () => {
-                  try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {}
-                }}
-                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.09]"
-              >
-                {sendTextModal.message}
-              </button>
-            </div>
+            {sendMethod === 'text' ? (
+              <>
+                {/* Phone — tap to copy */}
+                <div className="mb-4">
+                  <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Phone (tap to copy)</p>
+                  <button
+                    onClick={async () => { try { await navigator.clipboard.writeText(sendTextModal.phone); showNotification('Phone copied', 'success'); } catch {} }}
+                    className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-white/[0.09]"
+                  >
+                    {sendTextModal.phone}
+                  </button>
+                </div>
+                {/* Message — tap to copy */}
+                <div className="mb-3">
+                  <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Message (tap to copy)</p>
+                  <button
+                    onClick={async () => { try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {} }}
+                    className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.09]"
+                  >
+                    {sendTextModal.message}
+                  </button>
+                </div>
+                <p className="text-xs text-white/40">Tap to copy, paste into your messaging app, send, then Mark Sent.</p>
+              </>
+            ) : (
+              <>
+                {/* Email — tap to copy */}
+                <div className="mb-4">
+                  <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Email (tap to copy)</p>
+                  <button
+                    onClick={async () => { try { await navigator.clipboard.writeText(sendTextModal.parent.email || ''); showNotification('Email copied', 'success'); } catch {} }}
+                    className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-base font-mono text-white border border-white/[0.09] truncate"
+                  >
+                    {sendTextModal.parent.email}
+                  </button>
+                </div>
+                {/* Message — tap to copy */}
+                <div className="mb-3">
+                  <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Message (tap to copy)</p>
+                  <button
+                    onClick={async () => { try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {} }}
+                    className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.09]"
+                  >
+                    {sendTextModal.message}
+                  </button>
+                </div>
+                <a
+                  href={`mailto:${sendTextModal.parent.email}?subject=${encodeURIComponent(`Payment due — ${currentMonthLabel}`)}&body=${encodeURIComponent(sendTextModal.message)}`}
+                  className="flex items-center justify-center w-full px-4 py-3 rounded-lg text-sm font-semibold text-white transition hover:brightness-110"
+                  style={{ background: '#E8632A' }}
+                >
+                  Compose Email
+                </a>
+                <p className="text-xs text-white/40 mt-2">Opens your email app with the message ready, or copy the fields above. Then Mark Sent.</p>
+              </>
+            )}
 
             {/* Actions */}
             <div className="flex gap-3 mt-6">
@@ -1375,10 +1421,6 @@ export default function Dashboard() {
                 ✓ Mark Sent
               </button>
             </div>
-
-            <p className="text-xs text-white/40 mt-3 text-center">
-              Tap each field to copy. Paste into your messaging app, send, then tap Mark Sent.
-            </p>
           </div>
         </div>
       )}
