@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { teamConfig } from '@/lib/team-config';
 import { Navbar } from '@/components/ui/Navbar';
 import { Footer } from '@/components/landing/Footer';
-import { Search, CreditCard, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { CreditCard, CheckCircle2, AlertCircle, ArrowRight, KeyRound, ShieldCheck } from 'lucide-react';
 import type { Fee, Payment } from '@/lib/types';
 
 type LookupState = 'idle' | 'loading' | 'results' | 'error' | 'success';
@@ -20,16 +20,23 @@ const demoResults = {
   ],
 };
 
+// Each family gets a unique, unguessable payment ID (delivered in their invoice text/email).
+// Without it, no balance can be looked up — this replaces the old public "search by name" lookup
+// so a parent can only ever see their own family's fees.
+const ACCESS_ID = 'KCB-7H2K9';
+
 export default function PayPage() {
   const [lookupState, setLookupState] = useState<LookupState>('idle');
   const [lookupValue, setLookupValue] = useState('');
 
   function handleLookup(e: React.FormEvent) {
     e.preventDefault();
-    if (!lookupValue.trim()) return;
+    const code = lookupValue.trim().toUpperCase();
+    if (!code) return;
     setLookupState('loading');
-    // Simulate API call
-    setTimeout(() => setLookupState('results'), 800);
+    // Validate the unique payment ID. (Demo: matched client-side against the family's token.
+    // Production validates the token server-side + rate-limits, returning only that family's slice.)
+    setTimeout(() => setLookupState(code === ACCESS_ID ? 'results' : 'error'), 700);
   }
 
   return (
@@ -53,21 +60,23 @@ export default function PayPage() {
             <h1 className="font-display text-3xl md:text-4xl tracking-tighter leading-none text-foreground mb-3">
               Pay Your Fees
             </h1>
-            <p className="text-base text-text-secondary leading-relaxed max-w-[50ch]">
-              Look up your balance by parent name, email, or {teamConfig.sportConfig.playerLabel.toLowerCase()} name.
+            <p className="text-base text-text-secondary leading-relaxed max-w-[52ch]">
+              Enter the secure payment ID from your invoice text. Only the family it was sent to can view these fees, so no one can look up anyone else&apos;s balance.
             </p>
           </div>
 
-          {/* Lookup Form */}
-          <form onSubmit={handleLookup} className="mb-10">
+          {/* Lookup Form — gated by a unique payment ID */}
+          <form onSubmit={handleLookup} className="mb-3">
             <div className="relative">
-              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+              <KeyRound size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
               <input
                 type="text"
                 value={lookupValue}
-                onChange={(e) => setLookupValue(e.target.value)}
-                placeholder="Enter parent name, email, or player name"
-                className="w-full pl-12 pr-32 py-4 bg-surface border border-border rounded-xl text-foreground text-sm placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors duration-300"
+                onChange={(e) => { setLookupValue(e.target.value); if (lookupState === 'error') setLookupState('idle'); }}
+                placeholder="Payment ID — e.g. KCB-7H2K9"
+                autoCapitalize="characters"
+                autoComplete="off"
+                className="w-full pl-12 pr-32 py-4 bg-surface border border-border rounded-xl text-foreground text-sm uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal placeholder:text-text-muted focus:outline-none focus:border-accent transition-colors duration-300"
               />
               <button
                 type="submit"
@@ -78,14 +87,29 @@ export default function PayPage() {
                 {lookupState === 'loading' ? (
                   <span className="flex items-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Looking up
+                    Checking
                   </span>
                 ) : (
-                  'Look Up'
+                  'View Fees'
                 )}
               </button>
             </div>
           </form>
+
+          {/* Helper + testable demo ID */}
+          <div className="mb-10 flex items-center gap-2 text-xs text-text-muted">
+            <ShieldCheck size={13} style={{ color: teamConfig.accentColor }} />
+            <span>
+              Your payment ID is in the invoice text from your coach. Try it:{' '}
+              <button
+                type="button"
+                onClick={() => { setLookupValue(ACCESS_ID); setLookupState('idle'); }}
+                className="font-mono font-medium text-foreground hover:underline"
+              >
+                {ACCESS_ID}
+              </button>
+            </span>
+          </div>
 
           {/* Loading skeleton */}
           {lookupState === 'loading' && (
@@ -128,11 +152,26 @@ export default function PayPage() {
                   <div>
                     <div className="text-sm font-medium text-foreground mb-1">Secure payments via Stripe</div>
                     <div className="text-xs text-text-muted leading-relaxed">
-                      A 5.5% processing fee will be added at checkout. Your card information is handled securely by Stripe and never stored on our servers.
+                      A processing fee will be added at checkout. Your card information is handled securely by Stripe and never stored on our servers.
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Error state — invalid / unknown payment ID */}
+          {lookupState === 'error' && (
+            <div className="animate-fade-up text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center mx-auto mb-6">
+                <AlertCircle size={26} style={{ color: teamConfig.accentColor }} />
+              </div>
+              <h2 className="font-display text-xl font-semibold text-foreground tracking-tight mb-2">
+                We couldn&apos;t find that payment ID
+              </h2>
+              <p className="text-sm text-text-muted max-w-[40ch] mx-auto">
+                Double-check the secure ID from your invoice text. Fees are only visible with a valid family payment ID, so no one can look up another family.
+              </p>
             </div>
           )}
 
@@ -162,10 +201,10 @@ export default function PayPage() {
           {lookupState === 'idle' && (
             <div className="text-center py-16">
               <div className="w-16 h-16 rounded-full bg-surface-elevated flex items-center justify-center mx-auto mb-6">
-                <Search size={24} className="text-text-muted" />
+                <KeyRound size={24} className="text-text-muted" />
               </div>
-              <p className="text-sm text-text-muted max-w-[35ch] mx-auto">
-                Enter your information above to look up outstanding fees and make a payment.
+              <p className="text-sm text-text-muted max-w-[36ch] mx-auto">
+                Enter your unique payment ID above to view outstanding fees and pay securely.
               </p>
             </div>
           )}

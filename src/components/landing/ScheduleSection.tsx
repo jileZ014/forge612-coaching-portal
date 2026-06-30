@@ -1,6 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { teamConfig } from '@/lib/team-config';
+import { getSchedule } from '@/lib/firestore-helpers';
+import type { ScheduleEvent } from '@/lib/types';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
 import { MapPin, Clock } from 'lucide-react';
 
@@ -36,6 +39,23 @@ function getEventColor(type: string) {
 }
 
 export function ScheduleSection() {
+  const [events, setEvents] = useState<typeof sampleEvents>(sampleEvents);
+
+  useEffect(() => {
+    getSchedule()
+      .then((live) => {
+        const upcoming = (live as ScheduleEvent[])
+          .filter((e) => !e.cancelled)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map((e) => ({
+            id: e.id, title: e.title, date: e.date, startTime: e.startTime,
+            endTime: e.endTime, location: e.location, type: String(e.type),
+          }));
+        if (upcoming.length > 0) setEvents(upcoming);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section id="schedule" className="relative py-32 md:py-40">
       <div className="max-w-[1400px] mx-auto px-6">
@@ -64,7 +84,7 @@ export function ScheduleSection() {
 
           {/* Right — event list */}
           <div className="space-y-2">
-            {sampleEvents.map((event, i) => {
+            {events.map((event, i) => {
               const { dayName, dayNum, month } = formatDate(event.date);
               const isHighlight = event.type === 'game' || event.type === 'tournament';
 

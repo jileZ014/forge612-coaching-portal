@@ -37,15 +37,15 @@ import {
 } from 'lucide-react';
 
 const STAGE_COLORS: Record<LifecycleStage, string> = {
-  lead: 'bg-slate-200 text-slate-700',
-  tryout: 'bg-amber-200 text-amber-900',
-  offered: 'bg-yellow-200 text-yellow-900',
-  committed: 'bg-blue-200 text-blue-900',
-  registered: 'bg-indigo-200 text-indigo-900',
-  active: 'bg-emerald-200 text-emerald-900',
-  lapsed: 'bg-orange-200 text-orange-900',
-  alumni: 'bg-violet-200 text-violet-900',
-  declined: 'bg-rose-200 text-rose-900',
+  lead: 'bg-[#141418]/[0.08] text-white/60',
+  tryout: 'bg-amber-400/10 text-amber-200/80',
+  offered: 'bg-amber-400/10 text-amber-200/80',
+  committed: 'bg-sky-400/10 text-sky-200/80',
+  registered: 'bg-sky-400/10 text-sky-200/80',
+  active: 'bg-emerald-400/10 text-emerald-200/80',
+  lapsed: 'bg-[#141418]/[0.06] text-white/45',
+  alumni: 'bg-violet-400/10 text-violet-200/80',
+  declined: 'bg-red-400/10 text-red-200/80',
 };
 
 type Tab = 'overview' | 'players' | 'payments' | 'comms' | 'documents';
@@ -64,8 +64,6 @@ export default function FamilyHubPage() {
   const [tab, setTab] = useState<Tab>('overview');
 
   const [smsBody, setSmsBody] = useState('');
-  const [smsSending, setSmsSending] = useState(false);
-  const [smsResult, setSmsResult] = useState<string | null>(null);
 
   const [noteSummary, setNoteSummary] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
@@ -114,30 +112,8 @@ export default function FamilyHubPage() {
     await load();
   }
 
-  async function sendSms() {
-    if (!family || !smsBody.trim()) return;
-    setSmsSending(true);
-    setSmsResult(null);
-    try {
-      const res = await fetch('/api/sms/send', {
-        method: 'POST',
-        headers: await authHeaders(),
-        body: JSON.stringify({ familyId: family.id, body: smsBody }),
-      });
-      const data = await res.json();
-      if (res.ok && data.ok) {
-        setSmsBody('');
-        setSmsResult(`Sent (${data.delivery?.status ?? 'queued'})`);
-        await load();
-      } else {
-        setSmsResult(`Failed: ${data.error ?? 'unknown error'}`);
-      }
-    } catch (err) {
-      setSmsResult(`Error: ${err instanceof Error ? err.message : err}`);
-    } finally {
-      setSmsSending(false);
-    }
-  }
+  // SMS via Twilio retired — A2P 10DLC unregistered (carrier-blocked after 5 attempts).
+  // Parent contact now goes through mailto + sms: deep links from the coach's own account (no A2P needed).
 
   async function saveNote() {
     if (!family || !noteSummary.trim()) return;
@@ -190,7 +166,7 @@ export default function FamilyHubPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: teamConfig.primaryColor }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A]">
         <p className="text-white">Loading…</p>
       </div>
     );
@@ -198,10 +174,10 @@ export default function FamilyHubPage() {
 
   if (!family) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-slate-700 mb-4">Family not found.</p>
-          <Link href="/dashboard/families" className="text-blue-600 hover:underline">
+          <p className="text-white/70 mb-4">Family not found.</p>
+          <Link href="/dashboard/families" className="text-white/70 hover:underline">
             Back to families
           </Link>
         </div>
@@ -218,22 +194,22 @@ export default function FamilyHubPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-[#0A0A0A]">
+      <header className="bg-[#141418] border-b border-white/[0.09] sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center gap-3 mb-3">
-            <Link href="/dashboard/families" className="text-slate-500 hover:text-slate-900">
+            <Link href="/dashboard/families" className="text-white/45 hover:text-white">
               <ArrowLeft size={20} />
             </Link>
-            <h1 className="text-2xl font-semibold text-slate-900">{family.primaryParentName}</h1>
+            <h1 className="text-2xl font-semibold text-white">{family.primaryParentName}</h1>
             <span className={`text-xs px-2 py-1 rounded-full ${STAGE_COLORS[family.lifecycleStage]}`}>
               {family.lifecycleStage}
             </span>
             {family.doNotContact && (
-              <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">do-not-contact</span>
+              <span className="text-xs px-2 py-1 rounded-full bg-red-400/10 text-red-200/80">do-not-contact</span>
             )}
           </div>
-          <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+          <div className="flex flex-wrap gap-4 text-sm text-white/55">
             {family.primaryParentEmail && (
               <span className="inline-flex items-center gap-1.5">
                 <Mail size={14} /> {family.primaryParentEmail}
@@ -247,32 +223,32 @@ export default function FamilyHubPage() {
           </div>
         </div>
 
-        <nav className="max-w-6xl mx-auto px-6 flex gap-1 border-t border-slate-100">
+        <nav className="max-w-6xl mx-auto px-6 flex gap-1 border-t border-white/[0.06]">
           {tabs.map(({ key, label, icon: Icon, count }) => (
             <button
               key={key}
               onClick={() => setTab(key)}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition flex items-center gap-2 ${
                 tab === key
-                  ? 'border-slate-900 text-slate-900'
-                  : 'border-transparent text-slate-500 hover:text-slate-900'
+                  ? 'border-white text-white'
+                  : 'border-transparent text-white/45 hover:text-white'
               }`}
             >
               <Icon size={14} />
               {label}
               {count !== undefined && (
-                <span className="text-xs text-slate-400">({count})</span>
+                <span className="text-xs text-white/35">({count})</span>
               )}
             </button>
           ))}
         </nav>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-6">
+      <main className="max-w-6xl mx-auto px-6 py-6 animate-fade-up">
         {tab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section className="bg-white rounded-md border border-slate-200 p-5">
-              <h2 className="font-semibold text-slate-900 mb-3">Lifecycle</h2>
+            <section className="bg-[#141418] rounded-md border border-white/[0.09] p-5">
+              <h2 className="font-semibold text-white mb-3">Lifecycle</h2>
               <div className="flex flex-wrap gap-1.5">
                 {LIFECYCLE_STAGES.map((stage) => (
                   <button
@@ -280,7 +256,7 @@ export default function FamilyHubPage() {
                     onClick={() => changeStage(stage)}
                     className={`text-xs px-2.5 py-1 rounded-full transition ${
                       family.lifecycleStage === stage
-                        ? `${STAGE_COLORS[stage]} ring-2 ring-slate-900`
+                        ? `${STAGE_COLORS[stage]} ring-2 ring-white/40`
                         : `${STAGE_COLORS[stage]} opacity-60 hover:opacity-100`
                     }`}
                   >
@@ -289,25 +265,25 @@ export default function FamilyHubPage() {
                 ))}
               </div>
               {family.lifecycleStageChangedAt && (
-                <p className="text-xs text-slate-500 mt-3">
+                <p className="text-xs text-white/45 mt-3">
                   Last changed {new Date(family.lifecycleStageChangedAt).toLocaleDateString()}
                 </p>
               )}
             </section>
 
-            <section className="bg-white rounded-md border border-slate-200 p-5">
-              <h2 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
+            <section className="bg-[#141418] rounded-md border border-white/[0.09] p-5">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
                 <Tag size={16} /> Tags
               </h2>
               <div className="flex flex-wrap gap-1.5 mb-3">
                 {(family.tags ?? []).length === 0 && (
-                  <p className="text-sm text-slate-500">No tags yet.</p>
+                  <p className="text-sm text-white/45">No tags yet.</p>
                 )}
                 {(family.tags ?? []).map((tag) => (
                   <button
                     key={tag}
                     onClick={() => removeTag(tag)}
-                    className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-rose-100 hover:text-rose-700 transition"
+                    className="text-xs px-2.5 py-1 rounded bg-white/10 text-white/70 hover:bg-red-400/10 hover:text-red-200/80 transition"
                     title="Click to remove"
                   >
                     {tag} ×
@@ -320,7 +296,7 @@ export default function FamilyHubPage() {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addTag()}
                   placeholder="Add a tag (e.g. needs-financial-aid)"
-                  className="flex-1 px-3 py-1.5 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400"
+                  className="flex-1 px-3 py-1.5 rounded-md border border-white/[0.09] text-sm focus:border-white/30 focus:outline-none text-white placeholder:text-white/35"
                 />
                 <button
                   onClick={addTag}
@@ -332,9 +308,9 @@ export default function FamilyHubPage() {
               </div>
             </section>
 
-            <section className="bg-white rounded-md border border-slate-200 p-5">
-              <h2 className="font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                <Send size={16} /> Send SMS
+            <section className="bg-[#141418] rounded-md border border-white/[0.09] p-5">
+              <h2 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <Send size={16} /> Contact {family.primaryParentName.split(' ')[0]}
               </h2>
               <textarea
                 value={smsBody}
@@ -342,35 +318,42 @@ export default function FamilyHubPage() {
                 placeholder={`Message to ${family.primaryParentName.split(' ')[0]}…`}
                 rows={4}
                 disabled={family.doNotContact}
-                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 disabled:bg-slate-50 disabled:text-slate-400"
+                className="w-full px-3 py-2 rounded-md border border-white/[0.09] text-sm focus:border-white/30 focus:outline-none text-white placeholder:text-white/35 disabled:bg-white/[0.02] disabled:text-white/30"
               />
-              <div className="flex items-center justify-between mt-3">
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <a
+                  href={family.primaryParentEmail && smsBody.trim() && !family.doNotContact ? `mailto:${family.primaryParentEmail}?subject=${encodeURIComponent('Message from your coach')}&body=${encodeURIComponent(smsBody)}` : undefined}
+                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-white transition ${family.primaryParentEmail && smsBody.trim() && !family.doNotContact ? 'hover:brightness-110' : 'opacity-40 pointer-events-none'}`}
+                  style={{ background: teamConfig.accentColor }}
+                >
+                  <Mail size={14} /> Email
+                </a>
+                <a
+                  href={family.primaryParentPhone && smsBody.trim() && !family.doNotContact ? `sms:${family.primaryParentPhone.replace(/[^\d+]/g, '')}?body=${encodeURIComponent(smsBody)}` : undefined}
+                  className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium text-white/80 border border-white/15 transition ${family.primaryParentPhone && smsBody.trim() && !family.doNotContact ? 'hover:bg-white/10' : 'opacity-40 pointer-events-none'}`}
+                >
+                  <MessageSquare size={14} /> Text
+                </a>
                 <button
                   onClick={toggleDoNotContact}
-                  className="text-xs text-slate-500 hover:text-slate-900"
+                  className="ml-auto text-xs text-white/45 hover:text-white"
                 >
                   {family.doNotContact ? 'Re-enable contact' : 'Mark do-not-contact'}
                 </button>
-                <button
-                  onClick={sendSms}
-                  disabled={smsSending || !smsBody.trim() || family.doNotContact}
-                  className="px-4 py-1.5 rounded-md text-sm font-medium text-white disabled:opacity-50"
-                  style={{ background: teamConfig.accentColor }}
-                >
-                  {smsSending ? 'Sending…' : 'Send SMS'}
-                </button>
               </div>
-              {smsResult && <p className="text-xs mt-2 text-slate-600">{smsResult}</p>}
+              <p className="text-xs mt-3 text-white/40">
+                Email opens your mail app and Text opens Messages, both prefilled and sent from your own account. Automated SMS stays off until carrier A2P clears.
+              </p>
             </section>
 
-            <section className="bg-white rounded-md border border-slate-200 p-5">
-              <h2 className="font-semibold text-slate-900 mb-3">Log a note</h2>
+            <section className="bg-[#141418] rounded-md border border-white/[0.09] p-5">
+              <h2 className="font-semibold text-white mb-3">Log a note</h2>
               <input
                 value={noteSummary}
                 onChange={(e) => setNoteSummary(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && saveNote()}
                 placeholder='e.g. "Called about July tournament — left voicemail"'
-                className="w-full px-3 py-2 rounded-md border border-slate-200 text-sm focus:border-slate-400 focus:outline-none text-slate-900 placeholder:text-slate-400 mb-3"
+                className="w-full px-3 py-2 rounded-md border border-white/[0.09] text-sm focus:border-white/30 focus:outline-none text-white placeholder:text-white/35 mb-3"
               />
               <button
                 onClick={saveNote}
@@ -385,16 +368,16 @@ export default function FamilyHubPage() {
         )}
 
         {tab === 'players' && (
-          <div className="bg-white rounded-md border border-slate-200">
+          <div className="bg-[#141418] rounded-md border border-white/[0.09]">
             {players.length === 0 ? (
-              <p className="p-12 text-center text-slate-500">No players linked to this family yet.</p>
+              <p className="p-12 text-center text-white/45">No players linked to this family yet.</p>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-white/[0.06]">
                 {players.map((p) => (
                   <div key={p.id} className="px-5 py-4 flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-slate-900">{p.name}</p>
-                      <p className="text-sm text-slate-500">
+                      <p className="font-medium text-white">{p.name}</p>
+                      <p className="text-sm text-white/45">
                         {p.position && <span>{p.position} · </span>}
                         {p.jerseyNumber !== undefined && p.jerseyNumber !== null && (
                           <span>#{p.jerseyNumber} · </span>
@@ -414,12 +397,12 @@ export default function FamilyHubPage() {
         )}
 
         {tab === 'payments' && (
-          <div className="bg-white rounded-md border border-slate-200">
+          <div className="bg-[#141418] rounded-md border border-white/[0.09]">
             {payments.length === 0 ? (
-              <p className="p-12 text-center text-slate-500">No payment history yet.</p>
+              <p className="p-12 text-center text-white/45">No payment history yet.</p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-slate-600 text-left">
+                <thead className="bg-[#0A0A0A] text-white/55 text-left">
                   <tr>
                     <th className="px-5 py-2 font-medium">Player</th>
                     <th className="px-5 py-2 font-medium">Amount</th>
@@ -427,7 +410,7 @@ export default function FamilyHubPage() {
                     <th className="px-5 py-2 font-medium">Date</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-white/[0.06]">
                   {payments.map((p) => {
                     const player = players.find((pl) => pl.id === p.playerId);
                     return (
@@ -438,16 +421,16 @@ export default function FamilyHubPage() {
                           <span
                             className={`text-xs px-2 py-0.5 rounded-full ${
                               p.status === 'paid'
-                                ? 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-emerald-400/10 text-emerald-200/80'
                                 : p.status === 'partial'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-rose-100 text-rose-800'
+                                ? 'bg-amber-400/10 text-amber-200/80'
+                                : 'bg-red-400/10 text-red-200/80'
                             }`}
                           >
                             {p.status}
                           </span>
                         </td>
-                        <td className="px-5 py-2.5 text-slate-500">
+                        <td className="px-5 py-2.5 text-white/45">
                           {p.paidDate ? new Date(p.paidDate).toLocaleDateString() : '—'}
                         </td>
                       </tr>
@@ -460,36 +443,36 @@ export default function FamilyHubPage() {
         )}
 
         {tab === 'comms' && (
-          <div className="bg-white rounded-md border border-slate-200">
+          <div className="bg-[#141418] rounded-md border border-white/[0.09]">
             {comms.length === 0 ? (
-              <p className="p-12 text-center text-slate-500">No communications logged yet.</p>
+              <p className="p-12 text-center text-white/45">No communications logged yet.</p>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-white/[0.06]">
                 {comms.map((c) => (
                   <div key={c.id} className="px-5 py-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs uppercase tracking-wide text-slate-500">
+                        <span className="text-xs uppercase tracking-wide text-white/45">
                           {c.channel} · {c.direction}
                         </span>
                         {c.twilioStatus && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-white/70">
                             {c.twilioStatus}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-white/45">
                         {new Date(c.timestamp).toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-900">{c.summary}</p>
+                    <p className="text-sm text-white">{c.summary}</p>
                     {c.body && (
-                      <p className="text-sm text-slate-600 mt-1 whitespace-pre-wrap font-mono text-xs bg-slate-50 rounded p-2 border border-slate-100">
+                      <p className="text-sm text-white/55 mt-1 whitespace-pre-wrap font-mono text-xs bg-[#0A0A0A] rounded p-2 border border-white/[0.06]">
                         {c.body}
                       </p>
                     )}
                     {c.authorEmail && (
-                      <p className="text-xs text-slate-400 mt-1">by {c.authorEmail}</p>
+                      <p className="text-xs text-white/35 mt-1">by {c.authorEmail}</p>
                     )}
                   </div>
                 ))}
@@ -499,18 +482,18 @@ export default function FamilyHubPage() {
         )}
 
         {tab === 'documents' && (
-          <div className="bg-white rounded-md border border-slate-200 p-5">
+          <div className="bg-[#141418] rounded-md border border-white/[0.09] p-5">
             {docs.length === 0 ? (
-              <p className="text-center text-slate-500 py-12">
+              <p className="text-center text-white/45 py-12">
                 No documents uploaded yet. Upload UI ships in v0.1.
               </p>
             ) : (
-              <ul className="divide-y divide-slate-100">
+              <ul className="divide-y divide-white/[0.06]">
                 {docs.map((d) => (
                   <li key={d.id} className="py-3 flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{d.fileName}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-medium text-white">{d.fileName}</p>
+                      <p className="text-xs text-white/45">
                         {d.type} · {(d.sizeBytes / 1024).toFixed(0)} KB ·{' '}
                         {new Date(d.uploadedAt).toLocaleDateString()}
                       </p>
@@ -519,7 +502,7 @@ export default function FamilyHubPage() {
                       href={d.downloadUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-white/70 hover:underline"
                     >
                       View
                     </a>
