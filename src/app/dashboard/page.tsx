@@ -47,10 +47,14 @@ function getDefaultMessage(overdueMonths: string[]): string {
 }
 
 const METHOD_BADGES: Record<string, { label: string; color: string }> = {
-  square: { label: 'S', color: 'bg-sky-500/25' },
+  square: { label: 'Sq', color: 'bg-sky-500/25' },
+  stripe: { label: 'St', color: 'bg-indigo-500/25' },
   zelle: { label: 'Z', color: 'bg-violet-500/25' },
+  cashapp: { label: 'CA', color: 'bg-green-500/25' },
+  venmo: { label: 'V', color: 'bg-cyan-500/25' },
   cash: { label: 'C', color: 'bg-emerald-500/25' },
   check: { label: 'Ch', color: 'bg-amber-500/25' },
+  other: { label: '•', color: 'bg-white/15' },
 };
 
 const STATUS_COLORS: Record<ParentStatus, { bg: string; text: string; label: string }> = {
@@ -1161,18 +1165,12 @@ export default function Dashboard() {
                                 </button>
                                 {isDropdownOpen && (
                                   <div className="absolute z-20 top-11 left-1/2 -translate-x-1/2 bg-[#16161A] rounded-lg shadow-xl border border-white/10 py-1.5 min-w-[120px]">
-                                    <button onClick={() => markPayment(parent.id, col.key, 'square')}
-                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
-                                      Square
-                                    </button>
-                                    <button onClick={() => markPayment(parent.id, col.key, 'zelle')}
-                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
-                                      Zelle
-                                    </button>
-                                    <button onClick={() => markPayment(parent.id, col.key, 'cash')}
-                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
-                                      Cash
-                                    </button>
+                                    {([['square','Square'],['stripe','Stripe'],['zelle','Zelle'],['cashapp','Cash App'],['venmo','Venmo'],['cash','Cash'],['check','Check'],['other','Other']] as [PaymentMethod, string][]).map(([m, label]) => (
+                                      <button key={m} onClick={() => markPayment(parent.id, col.key, m)}
+                                        className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
+                                        {label}
+                                      </button>
+                                    ))}
                                     <button onClick={() => setPaymentDropdown(null)}
                                       className="block w-full text-left px-4 py-2 text-sm text-white/40 hover:bg-white/10 transition border-t border-white/10 mt-1 pt-2">
                                       Cancel
@@ -1764,11 +1762,11 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   <p className="text-xs text-white/55">${item.amount} {item.status === 'paid' ? `- Paid (${item.method})` : '- Unpaid'}</p>
                 </div>
                 {item.status !== 'paid' && (
-                  <div className="flex gap-1">
-                    {(['square', 'zelle', 'cash'] as PaymentMethod[]).map(m => (
+                  <div className="flex flex-wrap gap-1 justify-end max-w-[300px]">
+                    {([['square','Square'],['stripe','Stripe'],['zelle','Zelle'],['cashapp','Cash App'],['venmo','Venmo'],['cash','Cash'],['check','Check'],['other','Other']] as [PaymentMethod, string][]).map(([m, label]) => (
                       <button key={m} onClick={() => onMarkPaid(item.id, m)}
-                        className="px-2 py-1 bg-white/10 hover:bg-white/15 rounded text-xs capitalize transition">
-                        {m}
+                        className="px-2 py-1 bg-white/10 hover:bg-white/15 rounded text-xs transition">
+                        {label}
                       </button>
                     ))}
                   </div>
