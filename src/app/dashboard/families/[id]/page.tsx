@@ -307,7 +307,7 @@ export default function FamilyHubPage() {
                   <button
                     key={tag}
                     onClick={() => removeTag(tag)}
-                    className="text-xs px-2.5 py-1 rounded bg-slate-100 text-slate-700 hover:bg-rose-100 hover:text-rose-700 transition"
+                    className="text-xs px-2.5 py-1 rounded bg-white/10 text-slate-700 hover:bg-rose-100 hover:text-rose-700 transition"
                     title="Click to remove"
                   >
                     {tag} ×
@@ -473,7 +473,7 @@ export default function FamilyHubPage() {
                           {c.channel} · {c.direction}
                         </span>
                         {c.twilioStatus && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-white/10 text-slate-700">
                             {c.twilioStatus}
                           </span>
                         )}
