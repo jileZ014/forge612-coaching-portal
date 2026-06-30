@@ -791,12 +791,12 @@ export default function Dashboard() {
         <div className="max-w-[1600px] mx-auto px-6 py-8 animate-pulse">
           <div className="h-4 w-44 rounded bg-white/[0.06] mb-5" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-white/[0.03] border border-white/[0.06]" />)}
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-[#141418] border border-white/[0.09]" />)}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-white/[0.03] border border-white/[0.06]" />)}
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-[#141418] border border-white/[0.09]" />)}
           </div>
-          <div className="h-96 rounded-xl bg-white/[0.03] border border-white/[0.06]" />
+          <div className="h-96 rounded-xl bg-[#141418] border border-white/[0.09]" />
         </div>
       </div>
     );
@@ -813,7 +813,7 @@ export default function Dashboard() {
       )}
 
       {/* Header */}
-      <header className="bg-[#0A0A0A] border-b border-white/[0.06] px-6 py-5">
+      <header className="bg-[#0A0A0A] border-b border-white/[0.09] px-6 py-5">
         <div className="max-w-[1600px] mx-auto">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -833,11 +833,11 @@ export default function Dashboard() {
           <div className="mb-2.5 flex items-center gap-2 flex-wrap">
             <span className="text-[11px] uppercase tracking-wide text-white/35 font-semibold mr-1">Invoicing Pipeline</span>
             <button onClick={syncStripeCustomers} disabled={stripeSyncing}
-              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.09] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {stripeSyncing ? 'Syncing…' : '1. Sync Stripe Customers'}
             </button>
             <button onClick={createStripeInvoicesForCurrentMonth} disabled={stripeBatchCreating}
-              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.09] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {stripeBatchCreating ? 'Creating…' : '2. Create Stripe Invoices'}
             </button>
             <button onClick={sendStripeInvoicesViaSms} disabled={smsSending}
@@ -845,7 +845,7 @@ export default function Dashboard() {
               {smsSending ? 'Sending…' : '3. Send All SMS via Twilio'}
             </button>
             <button onClick={assignTeams} disabled={migrating}
-              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.09] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {migrating ? 'Assigning…' : 'Set Teams'}
             </button>
           </div>
@@ -854,21 +854,21 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] uppercase tracking-wide text-white/30 font-semibold mr-1">Square (legacy fallback)</span>
             <button onClick={createAllDrafts} disabled={batchCreating}
-              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
+              className="px-3 py-1.5 bg-[#141418] hover:bg-white/[0.06] border border-white/[0.09] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {batchCreating ? 'Creating…' : 'Create Square Drafts'}
             </button>
             <button onClick={resendTexts} disabled={resendLoading}
-              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
+              className="px-3 py-1.5 bg-[#141418] hover:bg-white/[0.06] border border-white/[0.09] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {resendLoading ? 'Loading…' : 'Re-send via Phone Link'}
             </button>
             {pendingInvoices.length > 0 && (
               <button onClick={() => setShowBatchSend(true)}
-                className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-bold transition text-white/80">
+                className="px-3 py-1.5 bg-[#141418] hover:bg-white/[0.06] border border-white/[0.09] rounded text-xs font-bold transition text-white/80">
                 Send All Texts ({pendingInvoices.length})
               </button>
             )}
             <button onClick={syncWithSquare} disabled={syncing}
-              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
+              className="px-3 py-1.5 bg-[#141418] hover:bg-white/[0.06] border border-white/[0.09] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {syncing ? 'Syncing…' : 'Sync Square'}
             </button>
           </div>
@@ -894,7 +894,7 @@ export default function Dashboard() {
                 <button
                   key={key}
                   onClick={() => setOpenBucket(openBucket === key ? null : key)}
-                  className={`rounded-xl p-5 border text-left transition bg-white/[0.03] hover:bg-white/[0.05] ${openBucket === key ? 'border-white/20' : 'border-white/[0.06]'}`}
+                  className={`rounded-xl p-5 border text-left transition bg-[#141418] hover:bg-[#1A1A1F] ${openBucket === key ? 'border-white/20' : 'border-white/[0.09]'}`}
                 >
                   <p className="text-xs font-medium uppercase tracking-wide text-white/50 flex items-center gap-2">
                     <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
@@ -909,7 +909,7 @@ export default function Dashboard() {
 
           {/* Drilldown list for the open bucket */}
           {openBucket && (
-            <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+            <div className="mt-4 bg-[#141418] border border-white/[0.09] rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-white/80">
                   {openBucket.replace(/_/g, ' ')} — {buckets[openBucket].length} families
@@ -1004,19 +1004,19 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
             <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Families</p>
             <p className="text-3xl font-semibold mt-2 tabular-nums">{totalFamilies}</p>
           </div>
-          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
             <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Paid This Month</p>
             <p className="text-3xl font-semibold mt-2 tabular-nums">{paidThisMonth}</p>
           </div>
-          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
             <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Outstanding</p>
             <p className={`text-3xl font-semibold mt-2 tabular-nums ${outstanding > 0 ? 'text-white' : 'text-white/40'}`}>{outstanding}</p>
           </div>
-          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
             <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Owed</p>
             <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? '#E8632A' : undefined }}>${totalOwed.toLocaleString()}</p>
           </div>
@@ -1024,7 +1024,7 @@ export default function Dashboard() {
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-6 items-center">
-          <div className="flex bg-white/[0.03] border border-white/[0.06] rounded-lg p-1">
+          <div className="flex bg-[#141418] border border-white/[0.09] rounded-lg p-1">
             {(['all', 'owes', 'paid'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${filter === f ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>
@@ -1032,7 +1032,7 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
-          <div className="flex bg-white/[0.03] border border-white/[0.06] rounded-lg p-1">
+          <div className="flex bg-[#141418] border border-white/[0.09] rounded-lg p-1">
             {(['all', 'active', 'on_break', 'exempt', 'inactive'] as const).map(s => (
               <button key={s} onClick={() => setStatusFilter(s)}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === s ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>
@@ -1041,12 +1041,12 @@ export default function Dashboard() {
             ))}
           </div>
           <input type="text" placeholder="Search name..." value={search} onChange={e => setSearch(e.target.value)}
-            className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2 text-white text-sm w-56 placeholder:text-white/30 focus:outline-none focus:border-white/20" />
+            className="bg-[#141418] border border-white/[0.09] rounded-lg px-4 py-2 text-white text-sm w-56 placeholder:text-white/30 focus:outline-none focus:border-white/20" />
         </div>
 
         {/* Table */}
         {parents.length === 0 ? (
-          <div className="bg-white/[0.03] rounded-xl p-16 text-center border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-xl p-16 text-center border border-white/[0.09]">
             <p className="text-white/70 text-lg font-medium mb-1">No families yet</p>
             <p className="text-white/40 text-sm mb-6">Import your roster to start tracking dues and invoices.</p>
             <a href="/import" className="inline-block px-6 py-3 rounded-lg font-medium transition text-white" style={{ background: '#E8632A' }}>
@@ -1054,10 +1054,10 @@ export default function Dashboard() {
             </a>
           </div>
         ) : (
-          <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-x-auto">
+          <div className="bg-[#101013] rounded-xl border border-white/[0.09] overflow-x-auto">
             <table className="w-full text-base">
               <thead>
-                <tr className="border-b border-white/[0.06]">
+                <tr className="border-b border-white/[0.09]">
                   <th className="text-left px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Parent</th>
                   <th className="text-left px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Players</th>
                   <th className="text-center px-3 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Rate</th>
@@ -1080,7 +1080,7 @@ export default function Dashboard() {
                   return (
                     <React.Fragment key={teamGroup || 'unassigned'}>
                       <tr>
-                        <td colSpan={10} className="bg-white/[0.04] px-4 py-2.5 border-y border-white/[0.06]">
+                        <td colSpan={10} className="bg-white/[0.04] px-4 py-2.5 border-y border-white/[0.09]">
                           <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{teamGroup || 'Unassigned'}</span>
                           <span className="text-xs text-white/40 ml-3">{teamParents.length} {teamParents.length === 1 ? 'family' : 'families'}</span>
                         </td>
@@ -1098,7 +1098,7 @@ export default function Dashboard() {
                   const canInvoice = !paidCurrentMonth && parent.phone && status === 'active';
 
                   return (
-                    <tr key={parent.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
+                    <tr key={parent.id} className="border-b border-white/[0.04] hover:bg-[#141418] transition-colors">
                       {/* Parent Name */}
                       <td className="px-4 py-4">
                         <p className="font-medium">{parent.firstName} {parent.lastName}</p>
@@ -1137,13 +1137,13 @@ export default function Dashboard() {
                                 </span>
                               </button>
                             ) : status === 'on_break' || status === 'exempt' || status === 'inactive' ? (
-                              <div className="w-9 h-9 rounded-md bg-white/[0.02] border border-white/[0.06] flex items-center justify-center mx-auto">
+                              <div className="w-9 h-9 rounded-md bg-[#101013] border border-white/[0.09] flex items-center justify-center mx-auto">
                                 <span className="text-white/25 text-sm">–</span>
                               </div>
                             ) : (
                               <div className="relative inline-block">
                                 <button onClick={() => setPaymentDropdown(isDropdownOpen ? null : { parentId: parent.id, month: col.key })}
-                                  className="w-9 h-9 rounded-md bg-white/[0.02] border border-white/10 flex items-center justify-center mx-auto hover:border-white/25 hover:bg-white/[0.04] transition" title="Unpaid — click to mark paid">
+                                  className="w-9 h-9 rounded-md bg-[#101013] border border-white/10 flex items-center justify-center mx-auto hover:border-white/25 hover:bg-white/[0.04] transition" title="Unpaid — click to mark paid">
                                   <span className="w-1.5 h-1.5 rounded-full bg-red-400/70" />
                                 </button>
                                 {isDropdownOpen && (
@@ -1294,7 +1294,7 @@ export default function Dashboard() {
           that stamps invoiceActivity.sentAt. */}
       {sendTextModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white/[0.03] rounded-2xl max-w-lg w-full p-6 border border-white/[0.06]">
+          <div className="bg-[#141418] rounded-2xl max-w-lg w-full p-6 border border-white/[0.09]">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-white">Text {sendTextModal.parent.firstName}</h2>
@@ -1310,7 +1310,7 @@ export default function Dashboard() {
                 onClick={async () => {
                   try { await navigator.clipboard.writeText(sendTextModal.phone); showNotification('Phone copied', 'success'); } catch {}
                 }}
-                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-white/[0.06]"
+                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-white/[0.09]"
               >
                 {sendTextModal.phone}
               </button>
@@ -1323,7 +1323,7 @@ export default function Dashboard() {
                 onClick={async () => {
                   try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {}
                 }}
-                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.06]"
+                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.09]"
               >
                 {sendTextModal.message}
               </button>
@@ -1529,7 +1529,7 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#141418] rounded-xl border border-white/[0.09] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Edit Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -1612,7 +1612,7 @@ function AddFamilyModal({ onClose, onSave }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#141418] rounded-xl border border-white/[0.09] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Add Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -1698,7 +1698,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#141418] rounded-xl border border-white/[0.09] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Line Items — {parent.firstName} {parent.lastName}</h2>
 
         {/* Existing Items */}
@@ -1727,7 +1727,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
 
         {/* Add New Item */}
         {showAdd ? (
-          <div className="space-y-3 border-t border-white/[0.06] pt-4">
+          <div className="space-y-3 border-t border-white/[0.09] pt-4">
             <select value={catalogItemId}
               onChange={e => {
                 const itemId = e.target.value;
@@ -1887,7 +1887,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#141418] rounded-xl border border-white/[0.09] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-1">Send Invoice</h2>
         <p className="text-white/55 text-sm mb-4">{parent.firstName} {parent.lastName} — {parent.phone}</p>
 
@@ -2080,7 +2080,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#141418] rounded-xl border border-white/[0.09] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-1">{isResendMode ? 'Re-send Texts' : 'Send All Texts'}</h2>
         <p className="text-white/55 text-sm mb-4">
           {isResendMode
@@ -2137,7 +2137,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
                   <p className="text-yellow-300 font-bold text-lg mb-2">Message copied! Paste in Phone Link</p>
                   <p className="text-yellow-200 text-sm mb-3">1. Phone Link should be open to {current.firstName}&apos;s conversation<br/>2. Tap the message box and <strong>Ctrl+V</strong> to paste<br/>3. Hit Send<br/>4. Come back here and click Next</p>
                   {copiedMessage && (
-                    <div className="bg-white/[0.03] rounded p-2 text-xs text-white/70 max-h-20 overflow-y-auto border border-white/10">
+                    <div className="bg-[#141418] rounded p-2 text-xs text-white/70 max-h-20 overflow-y-auto border border-white/10">
                       {copiedMessage}
                     </div>
                   )}
@@ -2173,7 +2173,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
               </button>
             )}
 
-            <div className="border-t border-white/[0.06] pt-3 mt-2">
+            <div className="border-t border-white/[0.09] pt-3 mt-2">
               <p className="text-xs text-white/40 mb-2">Queue ({invoices.length - currentIndex} remaining)</p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {invoices.slice(currentIndex).map((inv, i) => (
