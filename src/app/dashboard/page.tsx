@@ -5,6 +5,8 @@ import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, arrayUnion, arr
 import { db } from '@/lib/firebase';
 import { Parent, MonthlyPayment, LineItem, PaymentMethod, ParentStatus, RateType, Team, TEAMS, RATE_CONFIG, CatalogItem } from '@/types';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
+import { CountUp } from '@/components/ui/CountUp';
+import { TiltCard } from '@/components/ui/TiltCard';
 
 // Helper: get month strings for current + previous 2 months
 function getMonthColumns(): { key: string; label: string; shortLabel: string }[] {
@@ -790,15 +792,15 @@ export default function Dashboard() {
     return (
       <div className="min-h-screen bg-[#0A0A0A] text-white">
         <DashboardHeader />
-        <div className="max-w-[1600px] mx-auto px-6 py-8 animate-pulse">
-          <div className="h-4 w-44 rounded bg-white/[0.06] mb-5" />
+        <div className="max-w-[1600px] mx-auto px-6 py-8">
+          <div className="skeleton h-4 w-44 rounded mb-5" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-[#141418] border border-white/[0.09]" />)}
+            {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-28 rounded-xl" />)}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-[#141418] border border-white/[0.09]" />)}
+            {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-28 rounded-xl" />)}
           </div>
-          <div className="h-96 rounded-xl bg-[#141418] border border-white/[0.09]" />
+          <div className="skeleton h-96 rounded-xl" />
         </div>
       </div>
     );
@@ -890,21 +892,22 @@ export default function Dashboard() {
               { key: 'viewed_unpaid' as const, label: 'Viewed · Unpaid', dot: 'bg-amber-400/80', desc: 'Opened the link but not paid' },
               { key: 'sent_not_viewed' as const, label: 'Sent · Not Viewed', dot: 'bg-white/30', desc: 'Texted but never opened' },
               { key: 'not_sent' as const, label: 'Not Sent', dot: 'bg-red-400/80', desc: 'Owes but no invoice texted yet' },
-            ]).map(({ key, label, dot, desc }) => {
+            ]).map(({ key, label, dot, desc }, i) => {
               const list = buckets[key];
               return (
-                <button
-                  key={key}
-                  onClick={() => setOpenBucket(openBucket === key ? null : key)}
-                  className={`rounded-xl p-5 border text-left transition bg-[#141418] hover:bg-[#1A1A1F] ${openBucket === key ? 'border-white/20' : 'border-white/[0.09]'}`}
-                >
-                  <p className="text-xs font-medium uppercase tracking-wide text-white/50 flex items-center gap-2">
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
-                    {label}
-                  </p>
-                  <p className="text-3xl font-semibold mt-2 tabular-nums">{list.length}</p>
-                  <p className="text-xs text-white/40 mt-1">{desc}</p>
-                </button>
+                <TiltCard key={key} delay={i * 80} className="animate-fade-up">
+                  <button
+                    onClick={() => setOpenBucket(openBucket === key ? null : key)}
+                    className={`w-full h-full rounded-xl p-5 border text-left transition-colors bg-[#141418] hover:bg-[#1A1A1F] hover:border-white/20 ${openBucket === key ? 'border-white/20' : 'border-white/[0.09]'}`}
+                  >
+                    <p className="text-xs font-medium uppercase tracking-wide text-white/50 flex items-center gap-2">
+                      <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
+                      {label}
+                    </p>
+                    <p className="text-3xl font-semibold mt-2 tabular-nums"><CountUp value={list.length} /></p>
+                    <p className="text-xs text-white/40 mt-1">{desc}</p>
+                  </button>
+                </TiltCard>
               );
             })}
           </div>
@@ -1006,22 +1009,30 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
-            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Families</p>
-            <p className="text-3xl font-semibold mt-2 tabular-nums">{totalFamilies}</p>
-          </div>
-          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
-            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Paid This Month</p>
-            <p className="text-3xl font-semibold mt-2 tabular-nums">{paidThisMonth}</p>
-          </div>
-          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
-            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Outstanding</p>
-            <p className={`text-3xl font-semibold mt-2 tabular-nums ${outstanding > 0 ? 'text-white' : 'text-white/40'}`}>{outstanding}</p>
-          </div>
-          <div className="bg-[#141418] rounded-xl p-6 border border-white/[0.09]">
-            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Owed</p>
-            <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? '#E8632A' : undefined }}>${totalOwed.toLocaleString()}</p>
-          </div>
+          <TiltCard delay={0} className="animate-fade-up">
+            <button onClick={() => { setFilter('all'); setStatusFilter('all'); }} className="w-full h-full text-left bg-[#141418] rounded-xl p-6 border border-white/[0.09] hover:bg-[#1A1A1F] hover:border-white/20 transition-colors">
+              <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Families</p>
+              <p className="text-3xl font-semibold mt-2 tabular-nums"><CountUp value={totalFamilies} /></p>
+            </button>
+          </TiltCard>
+          <TiltCard delay={80} className="animate-fade-up">
+            <button onClick={() => setFilter('paid')} className="w-full h-full text-left bg-[#141418] rounded-xl p-6 border border-white/[0.09] hover:bg-[#1A1A1F] hover:border-white/20 transition-colors">
+              <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Paid This Month</p>
+              <p className="text-3xl font-semibold mt-2 tabular-nums"><CountUp value={paidThisMonth} /></p>
+            </button>
+          </TiltCard>
+          <TiltCard delay={160} className="animate-fade-up">
+            <button onClick={() => setFilter('owes')} className="w-full h-full text-left bg-[#141418] rounded-xl p-6 border border-white/[0.09] hover:bg-[#1A1A1F] hover:border-white/20 transition-colors">
+              <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Outstanding</p>
+              <p className={`text-3xl font-semibold mt-2 tabular-nums ${outstanding > 0 ? 'text-white' : 'text-white/40'}`}><CountUp value={outstanding} /></p>
+            </button>
+          </TiltCard>
+          <TiltCard delay={240} className="animate-fade-up">
+            <button onClick={() => setFilter('owes')} className="w-full h-full text-left bg-[#141418] rounded-xl p-6 border border-white/[0.09] hover:bg-[#1A1A1F] hover:border-white/20 transition-colors">
+              <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Owed</p>
+              <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? '#E8632A' : undefined }}><CountUp value={totalOwed} format={(n) => '$' + n.toLocaleString()} /></p>
+            </button>
+          </TiltCard>
         </div>
 
         {/* Filters */}
