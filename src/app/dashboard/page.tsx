@@ -45,17 +45,17 @@ function getDefaultMessage(overdueMonths: string[]): string {
 }
 
 const METHOD_BADGES: Record<string, { label: string; color: string }> = {
-  square: { label: 'S', color: 'bg-blue-600' },
-  zelle: { label: 'Z', color: 'bg-purple-600' },
-  cash: { label: 'C', color: 'bg-emerald-600' },
-  check: { label: 'Ch', color: 'bg-yellow-600' },
+  square: { label: 'S', color: 'bg-sky-500/25' },
+  zelle: { label: 'Z', color: 'bg-violet-500/25' },
+  cash: { label: 'C', color: 'bg-emerald-500/25' },
+  check: { label: 'Ch', color: 'bg-amber-500/25' },
 };
 
 const STATUS_COLORS: Record<ParentStatus, { bg: string; text: string; label: string }> = {
-  active: { bg: 'bg-green-700', text: 'text-white', label: 'Active' },
-  on_break: { bg: 'bg-yellow-700', text: 'text-white', label: 'On Break' },
-  exempt: { bg: 'bg-blue-700', text: 'text-white', label: 'Exempt' },
-  inactive: { bg: 'bg-gray-600', text: 'text-white', label: 'Inactive' },
+  active: { bg: 'bg-white/[0.06]', text: 'text-white/70', label: 'Active' },
+  on_break: { bg: 'bg-amber-400/10', text: 'text-amber-200/80', label: 'On Break' },
+  exempt: { bg: 'bg-sky-400/10', text: 'text-sky-200/80', label: 'Exempt' },
+  inactive: { bg: 'bg-white/[0.04]', text: 'text-white/40', label: 'Inactive' },
 };
 
 export default function Dashboard() {
@@ -786,76 +786,89 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen bg-[#0A0A0A] text-white">
+        <DashboardHeader />
+        <div className="max-w-[1600px] mx-auto px-6 py-8 animate-pulse">
+          <div className="h-4 w-44 rounded bg-white/[0.06] mb-5" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-white/[0.03] border border-white/[0.06]" />)}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-xl bg-white/[0.03] border border-white/[0.06]" />)}
+          </div>
+          <div className="h-96 rounded-xl bg-white/[0.03] border border-white/[0.06]" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-[#0A0A0A] text-white">
       <DashboardHeader />
       {/* Notification */}
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${notification.type === 'success' ? 'bg-green-600' : 'bg-red-600'} text-white`}>
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg border backdrop-blur-sm ${notification.type === 'success' ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-100' : 'bg-red-500/15 border-red-400/30 text-red-100'}`}>
           {notification.message}
         </div>
       )}
 
       {/* Header */}
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <header className="bg-[#0A0A0A] border-b border-white/[0.06] px-6 py-5">
         <div className="max-w-[1600px] mx-auto">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-2xl font-bold text-orange-500">Flight Pay</h1>
-              <p className="text-gray-400 text-sm">AZ Flight Basketball — Unified Invoicing (Stripe + Twilio)</p>
+              <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#E8632A' }} />
+                Flight Pay
+              </h1>
+              <p className="text-white/40 text-sm mt-1">AZ Flight Basketball · Unified Invoicing (Stripe + Twilio)</p>
             </div>
             <button onClick={() => setAddModal(true)}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition">
-              + Add Family
+              className="px-4 py-2 rounded-lg font-medium transition text-white text-sm" style={{ background: '#E8632A' }}>
+              Add Family
             </button>
           </div>
 
           {/* Unified Stripe/Twilio invoicing pipeline (current) */}
-          <div className="mb-3 flex items-center gap-2 flex-wrap">
-            <span className="text-xs uppercase tracking-wide text-indigo-400 font-semibold mr-2">Invoicing Pipeline</span>
+          <div className="mb-2.5 flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] uppercase tracking-wide text-white/35 font-semibold mr-1">Invoicing Pipeline</span>
             <button onClick={syncStripeCustomers} disabled={stripeSyncing}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {stripeSyncing ? 'Syncing…' : '1. Sync Stripe Customers'}
             </button>
             <button onClick={createStripeInvoicesForCurrentMonth} disabled={stripeBatchCreating}
-              className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {stripeBatchCreating ? 'Creating…' : '2. Create Stripe Invoices'}
             </button>
             <button onClick={sendStripeInvoicesViaSms} disabled={smsSending}
-              className="px-3 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-bold transition disabled:opacity-50">
+              className="px-3 py-1.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 text-white" style={{ background: '#E8632A' }}>
               {smsSending ? 'Sending…' : '3. Send All SMS via Twilio'}
             </button>
             <button onClick={assignTeams} disabled={migrating}
-              className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 rounded-lg text-sm font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.06] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {migrating ? 'Assigning…' : 'Set Teams'}
             </button>
           </div>
 
           {/* Square fallback (legacy — kept dormant per Taleb hedge) */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs uppercase tracking-wide text-gray-500 font-semibold mr-2">Square (legacy fallback)</span>
+            <span className="text-[11px] uppercase tracking-wide text-white/30 font-semibold mr-1">Square (legacy fallback)</span>
             <button onClick={createAllDrafts} disabled={batchCreating}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {batchCreating ? 'Creating…' : 'Create Square Drafts'}
             </button>
             <button onClick={resendTexts} disabled={resendLoading}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {resendLoading ? 'Loading…' : 'Re-send via Phone Link'}
             </button>
             {pendingInvoices.length > 0 && (
               <button onClick={() => setShowBatchSend(true)}
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-bold transition">
+                className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-bold transition text-white/80">
                 Send All Texts ({pendingInvoices.length})
               </button>
             )}
             <button onClick={syncWithSquare} disabled={syncing}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded text-xs font-medium transition disabled:opacity-50">
+              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] rounded text-xs font-medium transition disabled:opacity-50 text-white/60">
               {syncing ? 'Syncing…' : 'Sync Square'}
             </button>
           </div>
@@ -866,32 +879,29 @@ export default function Dashboard() {
         {/* Current Month Invoice Status — Paid / Viewed / Not Viewed / Not Sent */}
         <div className="mb-6">
           <div className="flex items-baseline justify-between mb-3">
-            <h2 className="text-lg font-semibold text-gray-200">{currentMonthLabel} — Invoice Status</h2>
-            <span className="text-sm text-gray-500">Click a card to see who&apos;s in it</span>
+            <h2 className="text-base font-semibold text-white/70">{currentMonthLabel} · Invoice Status</h2>
+            <span className="text-xs text-white/40">Click a card to see who&apos;s in it</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {([
-              { key: 'paid' as const, label: 'Paid', color: 'green', desc: 'Square shows paid' },
-              { key: 'viewed_unpaid' as const, label: 'Viewed · Unpaid', color: 'yellow', desc: 'Opened the link but not paid' },
-              { key: 'sent_not_viewed' as const, label: 'Sent · Not Viewed', color: 'orange', desc: 'Texted but never opened' },
-              { key: 'not_sent' as const, label: 'Not Sent', color: 'red', desc: 'Owes but no invoice texted yet' },
-            ]).map(({ key, label, color, desc }) => {
+              { key: 'paid' as const, label: 'Paid', dot: 'bg-emerald-400/80', desc: 'Square shows paid' },
+              { key: 'viewed_unpaid' as const, label: 'Viewed · Unpaid', dot: 'bg-amber-400/80', desc: 'Opened the link but not paid' },
+              { key: 'sent_not_viewed' as const, label: 'Sent · Not Viewed', dot: 'bg-white/30', desc: 'Texted but never opened' },
+              { key: 'not_sent' as const, label: 'Not Sent', dot: 'bg-red-400/80', desc: 'Owes but no invoice texted yet' },
+            ]).map(({ key, label, dot, desc }) => {
               const list = buckets[key];
-              const colorMap: Record<string, string> = {
-                green: 'border-green-600/60 bg-green-900/20 text-green-400',
-                yellow: 'border-yellow-600/60 bg-yellow-900/20 text-yellow-400',
-                orange: 'border-orange-600/60 bg-orange-900/20 text-orange-400',
-                red: 'border-red-600/60 bg-red-900/20 text-red-400',
-              };
               return (
                 <button
                   key={key}
                   onClick={() => setOpenBucket(openBucket === key ? null : key)}
-                  className={`rounded-xl p-5 border text-left transition hover:brightness-125 ${colorMap[color]} ${openBucket === key ? 'ring-2 ring-white/30' : ''}`}
+                  className={`rounded-xl p-5 border text-left transition bg-white/[0.03] hover:bg-white/[0.05] ${openBucket === key ? 'border-white/20' : 'border-white/[0.06]'}`}
                 >
-                  <p className="text-sm font-medium opacity-90">{label}</p>
-                  <p className="text-3xl font-bold mt-1">{list.length}</p>
-                  <p className="text-xs opacity-70 mt-1">{desc}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-white/50 flex items-center gap-2">
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
+                    {label}
+                  </p>
+                  <p className="text-3xl font-semibold mt-2 tabular-nums">{list.length}</p>
+                  <p className="text-xs text-white/40 mt-1">{desc}</p>
                 </button>
               );
             })}
@@ -899,9 +909,9 @@ export default function Dashboard() {
 
           {/* Drilldown list for the open bucket */}
           {openBucket && (
-            <div className="mt-4 bg-gray-800 border border-gray-700 rounded-xl p-5">
+            <div className="mt-4 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-gray-200">
+                <h3 className="font-semibold text-white/80">
                   {openBucket.replace(/_/g, ' ')} — {buckets[openBucket].length} families
                 </h3>
                 <div className="flex gap-2">
@@ -909,20 +919,20 @@ export default function Dashboard() {
                     <button
                       onClick={() => remindBucket(openBucket)}
                       disabled={bucketTexting}
-                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium disabled:opacity-50"
+                      className="px-3 py-1.5 bg-[#E8632A] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {bucketTexting ? 'Sending...' : `Re-text all ${buckets[openBucket].length}`}
                     </button>
                   )}
-                  <button onClick={() => setOpenBucket(null)} className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-sm">
+                  <button onClick={() => setOpenBucket(null)} className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 rounded-md text-sm">
                     Close
                   </button>
                 </div>
               </div>
               {buckets[openBucket].length === 0 ? (
-                <p className="text-gray-500 text-sm">No families in this bucket.</p>
+                <p className="text-white/40 text-sm">No families in this bucket.</p>
               ) : (
-                <div className="divide-y divide-gray-700">
+                <div className="divide-y divide-white/[0.06]">
                   {buckets[openBucket]
                     .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''))
                     .map(p => {
@@ -934,10 +944,10 @@ export default function Dashboard() {
                         <div key={p.id} className="flex items-center justify-between py-2.5">
                           <div className="flex-1">
                             <p className="font-medium text-white">{p.firstName} {p.lastName}</p>
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-white/55">
                               {(p.playerNames || []).join(', ') || '-'} · ${getBalance(p)}
                               {sentAgo !== null && <span className="ml-2">· sent {fmt(sentAgo)}</span>}
-                              {viewedAgo !== null && <span className="ml-2 text-yellow-400">· viewed {fmt(viewedAgo)} ({activity?.viewCount ?? 0}x)</span>}
+                              {viewedAgo !== null && <span className="ml-2 text-amber-200/80">· viewed {fmt(viewedAgo)} ({activity?.viewCount ?? 0}x)</span>}
                             </p>
                           </div>
                           <div className="flex gap-2">
@@ -967,7 +977,7 @@ export default function Dashboard() {
                                     showNotification('Failed to clear sent history', 'error');
                                   }
                                 }}
-                                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-md text-sm font-medium"
+                                className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 rounded-md text-sm font-medium"
                                 title="Clear the sent/viewed history for this month only — use when the family was marked sent but wasn't actually texted"
                               >
                                 Undo sent
@@ -977,7 +987,7 @@ export default function Dashboard() {
                               <button
                                 onClick={() => sendTextToParent(p)}
                                 disabled={textingParent === p.id}
-                                className="px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium disabled:opacity-50"
+                                className="px-3 py-1.5 bg-[#E8632A] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
                               >
                                 {textingParent === p.id ? '...' : (activity?.sentAt ? 'Re-text' : 'Text')}
                               </button>
@@ -994,70 +1004,71 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <p className="text-gray-400 text-base">Total Families</p>
-            <p className="text-3xl font-bold">{totalFamilies}</p>
+          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Families</p>
+            <p className="text-3xl font-semibold mt-2 tabular-nums">{totalFamilies}</p>
           </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <p className="text-gray-400 text-base">Paid This Month</p>
-            <p className="text-3xl font-bold text-green-500">{paidThisMonth}</p>
+          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Paid This Month</p>
+            <p className="text-3xl font-semibold mt-2 tabular-nums">{paidThisMonth}</p>
           </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <p className="text-gray-400 text-base">Outstanding</p>
-            <p className="text-3xl font-bold text-orange-500">{outstanding}</p>
+          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Outstanding</p>
+            <p className={`text-3xl font-semibold mt-2 tabular-nums ${outstanding > 0 ? 'text-white' : 'text-white/40'}`}>{outstanding}</p>
           </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <p className="text-gray-400 text-base">Total Owed</p>
-            <p className="text-3xl font-bold text-red-500">${totalOwed.toLocaleString()}</p>
+          <div className="bg-white/[0.03] rounded-xl p-6 border border-white/[0.06]">
+            <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Owed</p>
+            <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? '#E8632A' : undefined }}>${totalOwed.toLocaleString()}</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6 items-center">
-          <div className="flex bg-gray-800 rounded-lg p-1">
+        <div className="flex flex-wrap gap-3 mb-6 items-center">
+          <div className="flex bg-white/[0.03] border border-white/[0.06] rounded-lg p-1">
             {(['all', 'owes', 'paid'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded-md font-medium transition ${filter === f ? 'bg-orange-500 text-white' : 'text-gray-400 hover:text-white'}`}>
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${filter === f ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>
                 {f === 'all' ? 'All' : f === 'owes' ? 'Owes' : 'Paid'}
               </button>
             ))}
           </div>
-          <div className="flex bg-gray-800 rounded-lg p-1">
+          <div className="flex bg-white/[0.03] border border-white/[0.06] rounded-lg p-1">
             {(['all', 'active', 'on_break', 'exempt', 'inactive'] as const).map(s => (
               <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-4 py-2 rounded-md text-base font-medium transition ${statusFilter === s ? 'bg-gray-600 text-white' : 'text-gray-400 hover:text-white'}`}>
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${statusFilter === s ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white'}`}>
                 {s === 'all' ? 'All Status' : STATUS_COLORS[s].label}
               </button>
             ))}
           </div>
           <input type="text" placeholder="Search name..." value={search} onChange={e => setSearch(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-base w-56" />
+            className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-4 py-2 text-white text-sm w-56 placeholder:text-white/30 focus:outline-none focus:border-white/20" />
         </div>
 
         {/* Table */}
         {parents.length === 0 ? (
-          <div className="bg-gray-800 rounded-xl p-12 text-center border border-gray-700">
-            <p className="text-gray-400 text-lg mb-4">No data imported yet</p>
-            <a href="/import" className="inline-block px-6 py-3 bg-orange-500 hover:bg-orange-600 rounded-lg font-medium transition">
+          <div className="bg-white/[0.03] rounded-xl p-16 text-center border border-white/[0.06]">
+            <p className="text-white/70 text-lg font-medium mb-1">No families yet</p>
+            <p className="text-white/40 text-sm mb-6">Import your roster to start tracking dues and invoices.</p>
+            <a href="/import" className="inline-block px-6 py-3 rounded-lg font-medium transition text-white" style={{ background: '#E8632A' }}>
               Import Your Excel Tracker
             </a>
           </div>
         ) : (
-          <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-x-auto">
-            <table className="w-full text-lg">
+          <div className="bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-x-auto">
+            <table className="w-full text-base">
               <thead>
-                <tr className="border-b border-gray-700 bg-gray-800">
-                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Parent</th>
-                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Players</th>
-                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Rate</th>
-                  <th className="text-left px-4 py-4 text-gray-400 font-semibold text-base">Phone</th>
+                <tr className="border-b border-white/[0.06]">
+                  <th className="text-left px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Parent</th>
+                  <th className="text-left px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Players</th>
+                  <th className="text-center px-3 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Rate</th>
+                  <th className="text-left px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Phone</th>
                   {monthColumns.map(col => (
-                    <th key={col.key} className="text-center px-3 py-4 text-gray-400 font-semibold text-base">{col.shortLabel}</th>
+                    <th key={col.key} className="text-center px-3 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">{col.shortLabel}</th>
                   ))}
-                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Extras</th>
-                  <th className="text-right px-4 py-4 text-gray-400 font-semibold text-base">Balance</th>
-                  <th className="text-center px-3 py-4 text-gray-400 font-semibold text-base">Status</th>
-                  <th className="text-right px-4 py-4 text-gray-400 font-semibold text-base">Actions</th>
+                  <th className="text-center px-3 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Extras</th>
+                  <th className="text-right px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Balance</th>
+                  <th className="text-center px-3 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Status</th>
+                  <th className="text-right px-4 py-3.5 text-white/40 font-medium text-xs uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1069,9 +1080,9 @@ export default function Dashboard() {
                   return (
                     <React.Fragment key={teamGroup || 'unassigned'}>
                       <tr>
-                        <td colSpan={10} className="bg-gray-700/60 px-4 py-3 border-b border-gray-600">
-                          <span className="text-lg font-bold text-orange-400">{teamGroup || 'Unassigned'}</span>
-                          <span className="text-sm text-gray-400 ml-3">{teamParents.length} {teamParents.length === 1 ? 'family' : 'families'}</span>
+                        <td colSpan={10} className="bg-white/[0.04] px-4 py-2.5 border-y border-white/[0.06]">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-white/70">{teamGroup || 'Unassigned'}</span>
+                          <span className="text-xs text-white/40 ml-3">{teamParents.length} {teamParents.length === 1 ? 'family' : 'families'}</span>
                         </td>
                       </tr>
                       {teamParents.map(parent => {
@@ -1087,25 +1098,25 @@ export default function Dashboard() {
                   const canInvoice = !paidCurrentMonth && parent.phone && status === 'active';
 
                   return (
-                    <tr key={parent.id} className="border-b border-gray-700 hover:bg-gray-700/50">
+                    <tr key={parent.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors">
                       {/* Parent Name */}
                       <td className="px-4 py-4">
                         <p className="font-medium">{parent.firstName} {parent.lastName}</p>
-                        {parent.email && <p className="text-gray-500 text-sm">{parent.email}</p>}
+                        {parent.email && <p className="text-white/40 text-sm">{parent.email}</p>}
                       </td>
 
                       {/* Players */}
                       <td className="px-4 py-3">
-                        <p className="text-gray-300">{(parent.playerNames || []).join(', ') || '-'}</p>
+                        <p className="text-white/70">{(parent.playerNames || []).join(', ') || '-'}</p>
                       </td>
 
                       {/* Rate */}
                       <td className="px-3 py-3 text-center">
-                        <span className="text-gray-300">${getMonthlyRate(parent)}</span>
+                        <span className="text-white/70">${getMonthlyRate(parent)}</span>
                       </td>
 
                       {/* Phone */}
-                      <td className="px-4 py-3 text-gray-300 text-sm">
+                      <td className="px-4 py-3 text-white/70 text-sm">
                         {parent.phone || <span className="text-red-400">No phone</span>}
                       </td>
 
@@ -1119,37 +1130,38 @@ export default function Dashboard() {
                           <td key={col.key} className="px-3 py-3 text-center relative">
                             {isPaid ? (
                               <button onClick={() => undoPayment(parent.id, col.key)}
-                                className="w-10 h-10 rounded bg-green-500/30 border-2 border-green-400/60 flex items-center justify-center mx-auto hover:bg-green-500/50 transition"
+                                className="w-9 h-9 rounded-md bg-emerald-500/12 border border-emerald-400/25 flex items-center justify-center mx-auto hover:bg-emerald-500/20 transition"
                                 title={`Paid via ${payment.method} — click to undo`}>
-                                <span className={`text-sm font-bold text-white ${METHOD_BADGES[payment.method || '']?.color || ''} rounded px-1.5`}>
-                                  {METHOD_BADGES[payment.method || '']?.label || '?'}
+                                <span className={`text-xs font-semibold text-white/90 ${METHOD_BADGES[payment.method || '']?.color || ''} rounded px-1.5 py-0.5`}>
+                                  {METHOD_BADGES[payment.method || '']?.label || '✓'}
                                 </span>
                               </button>
                             ) : status === 'on_break' || status === 'exempt' || status === 'inactive' ? (
-                              <div className="w-10 h-10 rounded bg-gray-700 border border-gray-600 flex items-center justify-center mx-auto">
-                                <span className="text-gray-500 text-sm">-</span>
+                              <div className="w-9 h-9 rounded-md bg-white/[0.02] border border-white/[0.06] flex items-center justify-center mx-auto">
+                                <span className="text-white/25 text-sm">–</span>
                               </div>
                             ) : (
                               <div className="relative inline-block">
                                 <button onClick={() => setPaymentDropdown(isDropdownOpen ? null : { parentId: parent.id, month: col.key })}
-                                  className="w-10 h-10 rounded bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center mx-auto hover:bg-red-500/30 transition">
+                                  className="w-9 h-9 rounded-md bg-white/[0.02] border border-white/10 flex items-center justify-center mx-auto hover:border-white/25 hover:bg-white/[0.04] transition" title="Unpaid — click to mark paid">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-400/70" />
                                 </button>
                                 {isDropdownOpen && (
-                                  <div className="absolute z-20 top-12 left-1/2 -translate-x-1/2 bg-gray-700 rounded-lg shadow-xl border border-gray-600 py-2 min-w-[120px]">
+                                  <div className="absolute z-20 top-11 left-1/2 -translate-x-1/2 bg-[#16161A] rounded-lg shadow-xl border border-white/10 py-1.5 min-w-[120px]">
                                     <button onClick={() => markPayment(parent.id, col.key, 'square')}
-                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-blue-300 hover:bg-blue-600 hover:text-white transition">
+                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
                                       Square
                                     </button>
                                     <button onClick={() => markPayment(parent.id, col.key, 'zelle')}
-                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-purple-300 hover:bg-purple-600 hover:text-white transition">
+                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
                                       Zelle
                                     </button>
                                     <button onClick={() => markPayment(parent.id, col.key, 'cash')}
-                                      className="block w-full text-left px-4 py-2.5 text-sm font-medium text-emerald-300 hover:bg-emerald-600 hover:text-white transition">
+                                      className="block w-full text-left px-4 py-2 text-sm font-medium text-white/80 hover:bg-white/10 transition">
                                       Cash
                                     </button>
                                     <button onClick={() => setPaymentDropdown(null)}
-                                      className="block w-full text-left px-4 py-2.5 text-sm text-gray-400 hover:bg-gray-600 transition border-t border-gray-600 mt-1 pt-2.5">
+                                      className="block w-full text-left px-4 py-2 text-sm text-white/40 hover:bg-white/10 transition border-t border-white/10 mt-1 pt-2">
                                       Cancel
                                     </button>
                                   </div>
@@ -1164,12 +1176,12 @@ export default function Dashboard() {
                       <td className="px-3 py-3 text-center">
                         {unpaidExtras.length > 0 ? (
                           <button onClick={() => setAddChargeModal(parent)}
-                            className="text-sm text-yellow-400 hover:text-yellow-300">
-                            {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} - ${extrasTotal}
+                            className="text-sm text-amber-200/80 hover:text-amber-100">
+                            {unpaidExtras.length} item{unpaidExtras.length > 1 ? 's' : ''} · ${extrasTotal}
                           </button>
                         ) : (
                           <button onClick={() => setAddChargeModal(parent)}
-                            className="text-sm text-gray-500 hover:text-gray-400">
+                            className="text-base text-white/30 hover:text-white/60">
                             +
                           </button>
                         )}
@@ -1177,7 +1189,7 @@ export default function Dashboard() {
 
                       {/* Balance */}
                       <td className="px-4 py-3 text-right">
-                        <span className={`font-bold ${balance === 0 ? 'text-green-500' : balance > getMonthlyRate(parent) ? 'text-red-500' : 'text-orange-500'}`}>
+                        <span className={`font-semibold tabular-nums ${balance === 0 ? 'text-white/30' : 'text-red-300/90'}`}>
                           ${balance}
                         </span>
                       </td>
@@ -1208,10 +1220,10 @@ export default function Dashboard() {
                             if (paid?.status === 'paid') {
                               return (
                                 <div className="flex flex-col items-end gap-0.5">
-                                  <span className="px-3 py-1.5 bg-green-600/30 border border-green-600 text-green-300 rounded text-sm font-semibold">
+                                  <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-200/90 rounded-md text-xs font-medium">
                                     Paid {paid.method ? `(${paid.method})` : ''}
                                   </span>
-                                  {paid.paidAt && <span className="text-xs text-gray-500">{fmtDate(paid.paidAt)}</span>}
+                                  {paid.paidAt && <span className="text-xs text-white/35">{fmtDate(paid.paidAt)}</span>}
                                 </div>
                               );
                             }
@@ -1223,12 +1235,12 @@ export default function Dashboard() {
                             if (activity?.viewedAt) {
                               return (
                                 <div className="flex flex-col items-end gap-0.5">
-                                  <span className="px-3 py-1.5 bg-yellow-600/30 border border-yellow-600 text-yellow-200 rounded text-sm font-semibold">
+                                  <span className="px-2.5 py-1 bg-amber-400/10 text-amber-200/90 rounded-md text-xs font-medium">
                                     Viewed ({activity.viewCount ?? 0}×)
                                   </span>
-                                  <span className="text-xs text-gray-500">viewed {fmtDate(activity.viewedAt)}</span>
+                                  <span className="text-xs text-white/35">viewed {fmtDate(activity.viewedAt)}</span>
                                   <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
-                                    className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 mt-0.5">
+                                    className="text-xs text-white/50 hover:text-white disabled:opacity-50 mt-0.5">
                                     {textingParent === parent.id ? 'Updating...' : 'Re-text'}
                                   </button>
                                 </div>
@@ -1239,28 +1251,28 @@ export default function Dashboard() {
                             if (activity?.sentAt) {
                               return (
                                 <div className="flex flex-col items-end gap-0.5">
-                                  <span className="px-3 py-1.5 bg-orange-600/30 border border-orange-600 text-orange-200 rounded text-sm font-semibold">
+                                  <span className="px-2.5 py-1 bg-white/[0.06] text-white/60 rounded-md text-xs font-medium">
                                     Sent · not viewed
                                   </span>
-                                  <span className="text-xs text-gray-500">sent {fmtDate(activity.sentAt)}</span>
+                                  <span className="text-xs text-white/35">sent {fmtDate(activity.sentAt)}</span>
                                   <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
-                                    className="text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 mt-0.5">
+                                    className="text-xs text-white/50 hover:text-white disabled:opacity-50 mt-0.5">
                                     {textingParent === parent.id ? 'Updating...' : 'Re-text'}
                                   </button>
                                 </div>
                               );
                             }
 
-                            // NOT SENT — the green call-to-action
+                            // NOT SENT — the primary call-to-action
                             return (
                               <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-md text-base font-medium transition disabled:opacity-50">
+                                className="px-4 py-2 rounded-md text-sm font-medium transition disabled:opacity-50 text-white" style={{ background: '#E8632A' }}>
                                 {textingParent === parent.id ? 'Creating...' : 'Text'}
                               </button>
                             );
                           })()}
                           <button onClick={() => setEditModal(parent)}
-                            className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-md text-base font-medium transition">
+                            className="px-4 py-2 bg-white/[0.06] hover:bg-white/10 rounded-md text-sm font-medium transition text-white/80">
                             Edit
                           </button>
                         </div>
@@ -1282,23 +1294,23 @@ export default function Dashboard() {
           that stamps invoiceActivity.sentAt. */}
       {sendTextModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl max-w-lg w-full p-6 border border-gray-700">
+          <div className="bg-white/[0.03] rounded-2xl max-w-lg w-full p-6 border border-white/[0.06]">
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-white">Text {sendTextModal.parent.firstName}</h2>
-                <p className="text-gray-400 text-sm">${sendTextModal.amount} · {currentMonthLabel}</p>
+                <p className="text-white/55 text-sm">${sendTextModal.amount} · {currentMonthLabel}</p>
               </div>
-              <button onClick={() => setSendTextModal(null)} className="text-gray-400 hover:text-white text-2xl leading-none">×</button>
+              <button onClick={() => setSendTextModal(null)} className="text-white/55 hover:text-white text-2xl leading-none">×</button>
             </div>
 
             {/* Phone — tap to copy */}
             <div className="mb-4">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Phone (tap to copy)</p>
+              <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Phone (tap to copy)</p>
               <button
                 onClick={async () => {
                   try { await navigator.clipboard.writeText(sendTextModal.phone); showNotification('Phone copied', 'success'); } catch {}
                 }}
-                className="w-full bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-gray-700"
+                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-4 text-left text-xl font-mono text-white border border-white/[0.06]"
               >
                 {sendTextModal.phone}
               </button>
@@ -1306,12 +1318,12 @@ export default function Dashboard() {
 
             {/* Message — tap to copy */}
             <div className="mb-4">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Message (tap to copy)</p>
+              <p className="text-xs text-white/55 uppercase tracking-wide mb-1">Message (tap to copy)</p>
               <button
                 onClick={async () => {
                   try { await navigator.clipboard.writeText(sendTextModal.message); showNotification('Message copied', 'success'); } catch {}
                 }}
-                className="w-full bg-gray-900 hover:bg-gray-700 rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-gray-700"
+                className="w-full bg-[#0A0A0A] hover:bg-white/[0.06] rounded-lg px-4 py-3 text-left text-sm text-white whitespace-pre-wrap border border-white/[0.06]"
               >
                 {sendTextModal.message}
               </button>
@@ -1321,7 +1333,7 @@ export default function Dashboard() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setSendTextModal(null)}
-                className="flex-1 px-4 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg font-medium"
+                className="flex-1 px-4 py-3 bg-white/[0.06] hover:bg-white/10 rounded-lg font-medium"
               >
                 Cancel
               </button>
@@ -1358,13 +1370,13 @@ export default function Dashboard() {
                   }
                   setSendTextModal(null);
                 }}
-                className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold"
+                className="flex-1 px-4 py-3 bg-[#E8632A] hover:brightness-110 rounded-lg font-bold"
               >
                 ✓ Mark Sent
               </button>
             </div>
 
-            <p className="text-xs text-gray-500 mt-3 text-center">
+            <p className="text-xs text-white/40 mt-3 text-center">
               Tap each field to copy. Paste into your messaging app, send, then tap Mark Sent.
             </p>
           </div>
@@ -1517,47 +1529,47 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Edit Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
             <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
           </div>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
             <select value={team} onChange={e => setTeam(e.target.value as Team)}
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
               <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
-                className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+                className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
             )}
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={2} />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-between mt-6">
           <button onClick={onDelete} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded text-sm transition">Delete</button>
           <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
             <button onClick={handleSave} disabled={saving}
-              className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
+              className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -1600,45 +1612,45 @@ function AddFamilyModal({ onClose, onSave }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Add Family</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="First Name"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
             <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Last Name"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
           </div>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Phone"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email (optional)"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <input value={playerNames} onChange={e => setPlayerNames(e.target.value)} placeholder="Player names (comma separated)"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
           <div className="grid grid-cols-3 gap-3">
             <select value={team} onChange={e => setTeam(e.target.value as Team)}
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm">
               <option value="">No Team</option>
               {TEAMS.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
             <select value={rateType} onChange={e => setRateType(e.target.value as RateType)}
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm">
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm">
               {Object.entries(RATE_CONFIG).map(([key, cfg]) => (
                 <option key={key} value={key}>{cfg.label}</option>
               ))}
             </select>
             {rateType === 'custom' && (
               <input type="number" value={customRate} onChange={e => setCustomRate(Number(e.target.value))} placeholder="Amount"
-                className="bg-gray-700 text-white rounded px-3 py-2 text-sm" />
+                className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm" />
             )}
           </div>
           <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Notes"
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={2} />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" rows={2} />
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
           <button onClick={handleSave} disabled={saving || !firstName}
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
+            className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
             {saving ? 'Adding...' : 'Add Family'}
           </button>
         </div>
@@ -1686,23 +1698,23 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-4">Line Items — {parent.firstName} {parent.lastName}</h2>
 
         {/* Existing Items */}
         {existingItems.length > 0 && (
           <div className="mb-4 space-y-2">
             {existingItems.map(item => (
-              <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${item.status === 'paid' ? 'bg-green-500/10 border border-green-500/30' : 'bg-gray-700'}`}>
+              <div key={item.id} className={`flex items-center justify-between p-3 rounded-lg ${item.status === 'paid' ? 'bg-green-500/10 border border-green-500/30' : 'bg-white/[0.06]'}`}>
                 <div>
                   <p className="text-sm font-medium">{item.description}</p>
-                  <p className="text-xs text-gray-400">${item.amount} {item.status === 'paid' ? `- Paid (${item.method})` : '- Unpaid'}</p>
+                  <p className="text-xs text-white/55">${item.amount} {item.status === 'paid' ? `- Paid (${item.method})` : '- Unpaid'}</p>
                 </div>
                 {item.status !== 'paid' && (
                   <div className="flex gap-1">
                     {(['square', 'zelle', 'cash'] as PaymentMethod[]).map(m => (
                       <button key={m} onClick={() => onMarkPaid(item.id, m)}
-                        className="px-2 py-1 bg-gray-600 hover:bg-gray-500 rounded text-xs capitalize transition">
+                        className="px-2 py-1 bg-white/10 hover:bg-white/15 rounded text-xs capitalize transition">
                         {m}
                       </button>
                     ))}
@@ -1715,7 +1727,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
 
         {/* Add New Item */}
         {showAdd ? (
-          <div className="space-y-3 border-t border-gray-700 pt-4">
+          <div className="space-y-3 border-t border-white/[0.06] pt-4">
             <select value={catalogItemId}
               onChange={e => {
                 const itemId = e.target.value;
@@ -1729,7 +1741,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   }
                 }
               }}
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full">
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full">
               <option value="">Select from Square catalog (optional)</option>
               {catalogItems.map(item => (
                 <option key={item.id} value={item.id}>{item.name}</option>
@@ -1744,7 +1756,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
                   const variation = item?.variations.find(v => v.id === varId);
                   if (variation) setAmount(variation.priceMoney.amount);
                 }}
-                className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full">
+                className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full">
                 <option value="">Select variation</option>
                 {catalogItems.find(ci => ci.id === catalogItemId)?.variations.map(v => (
                   <option key={v.id} value={v.id}>{v.name} — ${v.priceMoney.amount}</option>
@@ -1752,26 +1764,26 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
               </select>
             )}
             <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (e.g., Uniform)"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
             <input type="number" value={amount || ''} onChange={e => setAmount(Number(e.target.value))} placeholder="Amount"
-              className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+              className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
             <div className="flex gap-2">
-              <button onClick={() => setShowAdd(false)} className="px-3 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
               <button onClick={handleSave} disabled={saving || !description || amount <= 0}
-                className="px-3 py-2 bg-orange-500 hover:bg-orange-600 rounded text-sm font-medium transition disabled:opacity-50">
+                className="px-3 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
                 {saving ? 'Adding...' : 'Add Charge'}
               </button>
             </div>
           </div>
         ) : (
           <button onClick={() => setShowAdd(true)}
-            className="w-full py-2 border border-dashed border-gray-600 rounded-lg text-gray-400 hover:text-white hover:border-gray-500 text-sm transition">
+            className="w-full py-2 border border-dashed border-white/10 rounded-lg text-white/55 hover:text-white hover:border-white/15 text-sm transition">
             + Add New Charge
           </button>
         )}
 
         <div className="flex justify-end mt-4">
-          <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Close</button>
+          <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Close</button>
         </div>
       </div>
     </div>
@@ -1875,13 +1887,13 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-1">Send Invoice</h2>
-        <p className="text-gray-400 text-sm mb-4">{parent.firstName} {parent.lastName} — {parent.phone}</p>
+        <p className="text-white/55 text-sm mb-4">{parent.firstName} {parent.lastName} — {parent.phone}</p>
 
         {/* Months to include */}
         <div className="mb-4">
-          <p className="text-sm font-medium text-gray-300 mb-2">Monthly Fees (${rate}/mo)</p>
+          <p className="text-sm font-medium text-white/70 mb-2">Monthly Fees (${rate}/mo)</p>
           <div className="space-y-1">
             {monthColumns.map(col => {
               const isPaid = payments[col.key]?.status === 'paid';
@@ -1895,7 +1907,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
                     )}
                     className="rounded" />
                   <span>{col.label}</span>
-                  <span className="text-gray-500">${rate}</span>
+                  <span className="text-white/40">${rate}</span>
                 </label>
               );
             })}
@@ -1905,7 +1917,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         {/* Extras to include */}
         {unpaidExtras.length > 0 && (
           <div className="mb-4">
-            <p className="text-sm font-medium text-gray-300 mb-2">Extra Charges</p>
+            <p className="text-sm font-medium text-white/70 mb-2">Extra Charges</p>
             <div className="space-y-1">
               {unpaidExtras.map(item => {
                 const included = includeExtras.includes(item.id);
@@ -1917,7 +1929,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
                       )}
                       className="rounded" />
                     <span>{item.description}</span>
-                    <span className="text-gray-500">${item.amount}</span>
+                    <span className="text-white/40">${item.amount}</span>
                   </label>
                 );
               })}
@@ -1926,18 +1938,18 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         )}
 
         {/* Total */}
-        <div className="bg-gray-700 rounded-lg p-3 mb-4">
+        <div className="bg-white/[0.06] rounded-lg p-3 mb-4">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Monthly ({includeMonths.length} month{includeMonths.length !== 1 ? 's' : ''})</span>
+            <span className="text-white/55">Monthly ({includeMonths.length} month{includeMonths.length !== 1 ? 's' : ''})</span>
             <span>${totalMonthly}</span>
           </div>
           {totalExtras > 0 && (
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Extras</span>
+              <span className="text-white/55">Extras</span>
               <span>${totalExtras}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold mt-1 pt-1 border-t border-gray-600">
+          <div className="flex justify-between font-bold mt-1 pt-1 border-t border-white/10">
             <span>Total</span>
             <span>${total}</span>
           </div>
@@ -1945,16 +1957,16 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
 
         {/* Due Date */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-gray-300 block mb-1">Due Date</label>
+          <label className="text-sm font-medium text-white/70 block mb-1">Due Date</label>
           <input type="date" value={dueDate} onChange={e => handleDueDateChange(e.target.value)}
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" />
         </div>
 
         {/* Message */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-gray-300 block mb-1">Message</label>
+          <label className="text-sm font-medium text-white/70 block mb-1">Message</label>
           <textarea value={message} onChange={e => setMessage(e.target.value)}
-            className="bg-gray-700 text-white rounded px-3 py-2 text-sm w-full" rows={4} />
+            className="bg-white/[0.06] text-white rounded px-3 py-2 text-sm w-full" rows={4} />
         </div>
 
         {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
@@ -1968,9 +1980,9 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
           </div>
         ) : (
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded text-sm transition">Cancel</button>
+            <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
             <button onClick={handleSend} disabled={sending || total === 0}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition disabled:opacity-50">
+              className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
               {sending ? 'Creating...' : `Create Invoice ($${total})`}
             </button>
           </div>
@@ -2068,9 +2080,9 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
 
   return (
     <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-6 w-full max-w-lg" onClick={e => e.stopPropagation()}>
         <h2 className="text-lg font-bold mb-1">{isResendMode ? 'Re-send Texts' : 'Send All Texts'}</h2>
-        <p className="text-gray-400 text-sm mb-4">
+        <p className="text-white/55 text-sm mb-4">
           {isResendMode
             ? `${invoices.length} published invoices — tap Send to open SMS, then tap Next after sending`
             : `${invoices.length} draft invoices — tap Send to publish & text each family`
@@ -2078,13 +2090,13 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
         </p>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-700 rounded-full h-3 mb-4">
+        <div className="w-full bg-white/[0.06] rounded-full h-3 mb-4">
           <div
             className="bg-green-500 h-3 rounded-full transition-all duration-300"
             style={{ width: `${(sentCount / invoices.length) * 100}%` }}
           />
         </div>
-        <p className="text-sm text-gray-400 mb-4">{sentCount} / {invoices.length} sent</p>
+        <p className="text-sm text-white/55 mb-4">{sentCount} / {invoices.length} sent</p>
 
         {isComplete ? (
           <div className="space-y-4">
@@ -2093,22 +2105,22 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
               <p className="text-green-300">All {invoices.length} invoices texted</p>
             </div>
             <button onClick={onClear}
-              className="w-full px-4 py-3 bg-gray-600 hover:bg-gray-500 rounded-lg font-medium transition">
+              className="w-full px-4 py-3 bg-white/10 hover:bg-white/15 rounded-lg font-medium transition">
               Clear Queue & Close
             </button>
           </div>
         ) : current ? (
           <div className="space-y-4">
-            <div className="bg-gray-700 rounded-lg p-4">
+            <div className="bg-white/[0.06] rounded-lg p-4">
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-bold text-lg">{current.firstName} {current.lastName}</p>
-                  <p className="text-gray-400 text-sm">{current.phone}</p>
+                  <p className="text-white/55 text-sm">{current.phone}</p>
                 </div>
                 <p className="text-xl font-bold text-green-400">${current.total}</p>
               </div>
               {current.months.length > 0 && (
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-white/55 mt-1">
                   {current.months.map(m => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short' }); }).join(', ')}
                 </p>
               )}
@@ -2125,7 +2137,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
                   <p className="text-yellow-300 font-bold text-lg mb-2">Message copied! Paste in Phone Link</p>
                   <p className="text-yellow-200 text-sm mb-3">1. Phone Link should be open to {current.firstName}&apos;s conversation<br/>2. Tap the message box and <strong>Ctrl+V</strong> to paste<br/>3. Hit Send<br/>4. Come back here and click Next</p>
                   {copiedMessage && (
-                    <div className="bg-gray-800 rounded p-2 text-xs text-gray-300 max-h-20 overflow-y-auto border border-gray-600">
+                    <div className="bg-white/[0.03] rounded p-2 text-xs text-white/70 max-h-20 overflow-y-auto border border-white/10">
                       {copiedMessage}
                     </div>
                   )}
@@ -2134,18 +2146,18 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
                       await navigator.clipboard.writeText(copiedMessage);
                     }
                   }}
-                    className="mt-2 px-3 py-1.5 bg-gray-600 hover:bg-gray-500 rounded text-xs text-gray-300 transition">
+                    className="mt-2 px-3 py-1.5 bg-white/10 hover:bg-white/15 rounded text-xs text-white/70 transition">
                     Re-copy message
                   </button>
                 </div>
                 <button onClick={advanceToNext}
-                  className="w-full px-4 py-5 bg-blue-600 hover:bg-blue-700 rounded-lg text-xl font-bold transition text-white">
+                  className="w-full px-4 py-5 bg-[#E8632A] hover:brightness-110 rounded-lg text-xl font-bold transition text-white">
                   Next &rarr;
                 </button>
               </div>
             ) : (
               <button onClick={handleSendAndNext} disabled={publishing}
-                className="w-full px-4 py-5 bg-green-600 hover:bg-green-700 rounded-lg text-xl font-bold transition text-white disabled:opacity-50">
+                className="w-full px-4 py-5 bg-[#E8632A] hover:brightness-110 rounded-lg text-xl font-bold transition text-white disabled:opacity-50">
                 {publishing ? 'Publishing...' : `Send Text to ${current.firstName} →`}
               </button>
             )}
@@ -2156,18 +2168,18 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
                   setCurrentIndex(prev => prev + 1);
                 }
               }}
-                className="w-full px-4 py-2 bg-gray-600 hover:bg-gray-500 rounded-lg text-sm text-gray-300 transition">
+                className="w-full px-4 py-2 bg-white/10 hover:bg-white/15 rounded-lg text-sm text-white/70 transition">
                 Skip
               </button>
             )}
 
-            <div className="border-t border-gray-700 pt-3 mt-2">
-              <p className="text-xs text-gray-500 mb-2">Queue ({invoices.length - currentIndex} remaining)</p>
+            <div className="border-t border-white/[0.06] pt-3 mt-2">
+              <p className="text-xs text-white/40 mb-2">Queue ({invoices.length - currentIndex} remaining)</p>
               <div className="space-y-1 max-h-40 overflow-y-auto">
                 {invoices.slice(currentIndex).map((inv, i) => (
-                  <div key={inv.parentId} className={`flex justify-between text-sm px-2 py-1 rounded ${i === 0 ? 'bg-gray-600' : ''}`}>
-                    <span className={i === 0 ? 'text-white font-medium' : 'text-gray-400'}>{inv.firstName} {inv.lastName}</span>
-                    <span className="text-gray-500">${inv.total}</span>
+                  <div key={inv.parentId} className={`flex justify-between text-sm px-2 py-1 rounded ${i === 0 ? 'bg-white/10' : ''}`}>
+                    <span className={i === 0 ? 'text-white font-medium' : 'text-white/55'}>{inv.firstName} {inv.lastName}</span>
+                    <span className="text-white/40">${inv.total}</span>
                   </div>
                 ))}
               </div>
@@ -2176,7 +2188,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
         ) : null}
 
         <div className="flex justify-between mt-4">
-          <button onClick={onClose} className="px-4 py-2 text-gray-400 hover:text-white text-sm transition">
+          <button onClick={onClose} className="px-4 py-2 text-white/55 hover:text-white text-sm transition">
             Minimize
           </button>
           <button onClick={onClear} className="px-4 py-2 text-red-400 hover:text-red-300 text-sm transition">
