@@ -831,10 +831,16 @@ export default function Dashboard() {
               </h1>
               <p className="text-white/40 text-sm mt-1">AZ Flight Basketball · Unified Invoicing (Stripe + Twilio)</p>
             </div>
-            <button onClick={() => setAddModal(true)}
-              className="px-4 py-2 rounded-lg font-medium transition text-white text-sm" style={{ background: '#E8632A' }}>
-              Add Family
-            </button>
+            <div className="flex items-center gap-2">
+              <a href="/dashboard/registrations"
+                className="px-4 py-2 rounded-lg font-medium transition text-white/80 text-sm bg-white/[0.06] hover:bg-white/10 border border-white/[0.09]">
+                Registrations
+              </a>
+              <button onClick={() => setAddModal(true)}
+                className="px-4 py-2 rounded-lg font-medium transition text-white text-sm" style={{ background: '#E8632A' }}>
+                Add Family
+              </button>
+            </div>
           </div>
 
           {/* Unified Stripe/Twilio invoicing pipeline (current) */}

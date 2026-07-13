@@ -11,6 +11,22 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Public self-registration. The public /register form CREATEs a shape-checked
+    // pending doc (client SDK); no public reads. Only the coach can read + approve/reject
+    // (update). On approval the coach client fans out to parents + families/players.
+    match /registrations/{regId} {
+      allow create: if request.resource.data.status == 'pending'
+                    && request.resource.data.parentFirstName is string
+                    && request.resource.data.parentFirstName.size() > 0
+                    && request.resource.data.parentFirstName.size() < 100
+                    && request.resource.data.players is list
+                    && request.resource.data.players.size() > 0
+                    && request.resource.data.players.size() <= 8;
+      allow read, update: if request.auth != null
+                    && request.auth.token.email == get(/databases/$(database)/documents/teams/az-flight-hoops).data.coachEmail;
+      allow delete: if false;
+    }
+
     // Helper: check if the authenticated user is the coach for this team
     function isCoach(teamId) {
       return request.auth != null &&
