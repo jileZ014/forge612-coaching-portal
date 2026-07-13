@@ -76,6 +76,7 @@ export async function approveRegistration(
       primaryParentPhone: reg.parentPhone,
       secondaryParentName: reg.secondaryParentName || undefined,
       secondaryParentPhone: reg.secondaryParentPhone || undefined,
+      secondaryParentEmail: reg.secondaryParentEmail || undefined,
       playerIds: [],
       lifecycleStage: 'registered',
       lifecycleStageChangedAt: nowIso,

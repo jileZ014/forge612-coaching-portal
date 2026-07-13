@@ -170,6 +170,7 @@ export default function RegistrationsReviewPage() {
                       <div className="text-sm text-white/50">
                         2nd parent: {reg.secondaryParentName}
                         {reg.secondaryParentPhone ? ` · ${reg.secondaryParentPhone}` : ''}
+                        {reg.secondaryParentEmail ? ` · ${reg.secondaryParentEmail}` : ''}
                       </div>
                     )}
                     {reg.notes && (

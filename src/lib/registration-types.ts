@@ -24,14 +24,16 @@ export interface Registration {
   parentPhone: string;
   secondaryParentName?: string;
   secondaryParentPhone?: string;
+  secondaryParentEmail?: string;
 
   // Players
   players: RegistrationPlayer[];
 
   // Context
-  teamCode: string; // one of the 6 coached teams (see roster page TEAMS)
+  teamCode: string; // age-group bucket: 9u | 10u | 12u/13u | 14u | 15u
   teamLabel: string;
   notes?: string;
+  season?: string; // e.g. '2026-2027'
   source: string; // 'self-registration'
 
   // Lifecycle / audit

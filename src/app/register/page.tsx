@@ -5,31 +5,40 @@ import { Plus, Trash2, Check } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// PUBLIC parent self-registration. No auth. Submits to /api/register, which
-// quarantines the entry (status 'pending') and pings Coach Jonas on Telegram.
-// Styled to match the public roster page (semantic tokens + accent).
+// PUBLIC parent self-registration (2026-2027 season). No auth. Submits to Firestore
+// (client SDK, create-only pending rule) then pings Coach Jonas via /api/notify-registration.
 
 type TeamOption = { code: string; label: string };
 const TEAMS: TeamOption[] = [
-  { code: '16u-rob', label: '16u (Coach Rob)' },
-  { code: '15u-white', label: '15u (Coach White)' },
-  { code: '14u-jonas', label: '14u (Coach Jonas)' },
-  { code: '13u-josiah', label: '13u (Coach Josiah)' },
-  { code: '10u-salo', label: '10u (Coach Salo)' },
-  { code: '9u-toni', label: '9u (Coach Toni)' },
-  { code: 'unsure', label: 'Not sure yet' },
+  { code: '9u', label: '9U' },
+  { code: '10u', label: '10U' },
+  { code: '12u/13u', label: '12U / 13U' },
+  { code: '14u', label: '14U' },
+  { code: '15u', label: '15U' },
 ];
 
 type PlayerInput = { name: string; birthYear: string; gradYear: string; school: string };
 const emptyPlayer = (): PlayerInput => ({ name: '', birthYear: '', gradYear: '', school: '' });
 
+const WAIVER_URL =
+  'https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightWaiverandReleaseForm/formperma/YsZX8UohvyRTa9RJ7_AjWPo8Dbb-bADqzzniMNLF7pc';
+const CONDUCT_URL =
+  'https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightBasketballClubEnrollmentChecklis/formperma/bUGl_5b9IK7zDH3VBBnlOXo82CoPLK1_HxmACftpymk';
+const AAU_URL = 'https://play.aausports.org/joinaau/multimembershipapplication.aspx';
+
 export default function RegisterPage() {
+  // Primary parent
   const [parentFirstName, setParentFirstName] = useState('');
   const [parentLastName, setParentLastName] = useState('');
-  const [parentEmail, setParentEmail] = useState('');
   const [parentPhone, setParentPhone] = useState('');
-  const [secondaryParentName, setSecondaryParentName] = useState('');
-  const [secondaryParentPhone, setSecondaryParentPhone] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
+  // Optional second parent
+  const [showSecond, setShowSecond] = useState(false);
+  const [sec2First, setSec2First] = useState('');
+  const [sec2Last, setSec2Last] = useState('');
+  const [sec2Phone, setSec2Phone] = useState('');
+  const [sec2Email, setSec2Email] = useState('');
+
   const [teamCode, setTeamCode] = useState('');
   const [notes, setNotes] = useState('');
   const [players, setPlayers] = useState<PlayerInput[]>([emptyPlayer()]);
@@ -48,13 +57,20 @@ export default function RegisterPage() {
   function removePlayer(idx: number) {
     setPlayers((prev) => prev.filter((_, i) => i !== idx));
   }
+  function removeSecondParent() {
+    setShowSecond(false);
+    setSec2First('');
+    setSec2Last('');
+    setSec2Phone('');
+    setSec2Email('');
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!parentFirstName.trim()) return setError('Please enter your first name.');
     if (!parentPhone.trim()) return setError('Please enter a phone number.');
-    if (!teamCode) return setError('Please choose a team or age group.');
+    if (!teamCode) return setError('Please choose an age group.');
     const validPlayers = players.filter((p) => p.name.trim());
     if (validPlayers.length === 0) return setError('Please add at least one player.');
 
@@ -67,16 +83,16 @@ export default function RegisterPage() {
     setSubmitting(true);
     try {
       const teamLabel = TEAMS.find((t) => t.code === teamCode)?.label ?? teamCode;
-      // Write the pending registration directly (client SDK). Firestore rules allow a
-      // public CREATE of a shape-checked pending doc; only the coach can read/approve it.
+      const secName = [sec2First.trim(), sec2Last.trim()].filter(Boolean).join(' ');
       await addDoc(collection(db, 'registrations'), {
         status: 'pending',
         parentFirstName: parentFirstName.trim(),
         parentLastName: parentLastName.trim(),
         parentEmail: parentEmail.trim().toLowerCase(),
         parentPhone: parentPhone.trim(),
-        secondaryParentName: secondaryParentName.trim(),
-        secondaryParentPhone: secondaryParentPhone.trim(),
+        secondaryParentName: showSecond ? secName : '',
+        secondaryParentPhone: showSecond ? sec2Phone.trim() : '',
+        secondaryParentEmail: showSecond ? sec2Email.trim().toLowerCase() : '',
         players: validPlayers.map((p) => ({
           name: p.name.trim(),
           birthYear: p.birthYear.trim(),
@@ -86,6 +102,7 @@ export default function RegisterPage() {
         teamCode,
         teamLabel,
         notes: notes.trim(),
+        season: '2026-2027',
         source: 'self-registration',
         createdAt: new Date().toISOString(),
       });
@@ -130,6 +147,21 @@ export default function RegisterPage() {
             Thanks, {parentFirstName.trim()}. Coach Jonas has been notified and will confirm your
             spot shortly. You&rsquo;ll get a text with your first invoice once you&rsquo;re approved.
           </p>
+          <p className="text-text-muted text-xs leading-relaxed mt-4">
+            Next steps: complete the{' '}
+            <a href={WAIVER_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+              Waiver &amp; Release
+            </a>{' '}
+            and{' '}
+            <a href={CONDUCT_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+              Code of Conduct
+            </a>
+            , and sign up for{' '}
+            <a href={AAU_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+              AAU membership
+            </a>{' '}
+            (club: Arizona Flight Basketball Club, code W3E3ED).
+          </p>
         </div>
       </div>
     );
@@ -140,7 +172,7 @@ export default function RegisterPage() {
       <header className="border-b border-border bg-surface-elevated">
         <div className="max-w-xl mx-auto px-5 py-6">
           <div className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
-            AZ Flight Hoops
+            AZ Flight Hoops &middot; 2026&ndash;2027 Season
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mt-1 leading-tight">Player Registration</h1>
           <p className="text-sm text-text-muted mt-1">
@@ -151,8 +183,64 @@ export default function RegisterPage() {
       </header>
 
       <main className="max-w-xl mx-auto px-5 py-6">
+        {/* Registration info */}
+        <section className="rounded-xl border border-border bg-surface-elevated p-5 mb-6 text-sm leading-relaxed">
+          <h2 className="font-semibold mb-3">What to know</h2>
+          <p className="text-text-muted mb-3">
+            AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games,
+            tournaments, and equipment.
+          </p>
+          <ul className="space-y-2 text-text-secondary">
+            <li>
+              <span className="font-medium text-foreground">Monthly dues:</span> $95 per player
+              ($170 for two players), due by the 7th of each month.
+            </li>
+            <li className="rounded-md px-3 py-2" style={{ background: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }}>
+              <span className="font-semibold text-foreground">Heads up:</span> starting{' '}
+              <span className="font-semibold text-foreground">September 2026</span>, monthly club
+              fees will increase.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">New players:</span>{' '}
+              your first payment is two months up front ($190), non-refundable, to hold your
+              player&rsquo;s spot (a two-month commitment). It&rsquo;s $95/month after that.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Team kit:</span> $90 one-time (reversible
+              jersey + backpack).
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Ways to pay:</span> monthly invoice by
+              text or email, Zelle to 303-908-6810, or check/cash.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">AAU membership</span> is required. Sign
+              up at{' '}
+              <a href={AAU_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+                AAU
+              </a>{' '}
+              under &ldquo;Arizona Flight Basketball Club&rdquo; (code W3E3ED).
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Also complete:</span>{' '}
+              <a href={WAIVER_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+                Waiver &amp; Release
+              </a>{' '}
+              and{' '}
+              <a href={CONDUCT_URL} className="text-accent underline" target="_blank" rel="noreferrer">
+                Code of Conduct
+              </a>
+              .
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Team communication</span>{' '}
+              and schedules go out through the Band app (we&rsquo;ll invite the email you provide).
+            </li>
+          </ul>
+        </section>
+
         <form onSubmit={submit} className="space-y-6">
-          {/* Parent */}
+          {/* Parent(s) */}
           <section className="rounded-xl border border-border bg-surface-elevated p-5">
             <h2 className="font-semibold mb-4">Parent / guardian</h2>
             <div className="grid grid-cols-2 gap-3">
@@ -169,6 +257,41 @@ export default function RegisterPage() {
                 <TextInput value={parentEmail} onChange={setParentEmail} type="email" inputMode="email" placeholder="you@email.com" autoComplete="email" />
               </FormField>
             </div>
+
+            {!showSecond ? (
+              <button
+                type="button"
+                onClick={() => setShowSecond(true)}
+                className="mt-4 text-xs font-semibold text-accent hover:underline inline-flex items-center gap-1"
+              >
+                <Plus size={13} /> Add another parent
+              </button>
+            ) : (
+              <div className="mt-4 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
+                    Second parent / guardian
+                  </span>
+                  <button type="button" onClick={removeSecondParent} className="text-text-muted hover:text-error p-1" title="Remove">
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="First name">
+                    <TextInput value={sec2First} onChange={setSec2First} autoComplete="given-name" />
+                  </FormField>
+                  <FormField label="Last name">
+                    <TextInput value={sec2Last} onChange={setSec2Last} autoComplete="family-name" />
+                  </FormField>
+                  <FormField label="Phone" className="col-span-2">
+                    <TextInput value={sec2Phone} onChange={setSec2Phone} type="tel" inputMode="tel" autoComplete="tel" />
+                  </FormField>
+                  <FormField label="Email" className="col-span-2">
+                    <TextInput value={sec2Email} onChange={setSec2Email} type="email" inputMode="email" />
+                  </FormField>
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Players */}
@@ -214,7 +337,7 @@ export default function RegisterPage() {
           {/* Team + extras */}
           <section className="rounded-xl border border-border bg-surface-elevated p-5">
             <h2 className="font-semibold mb-4">Team &amp; details</h2>
-            <FormField label="Team / age group *">
+            <FormField label="Age group *">
               <select
                 value={teamCode}
                 onChange={(e) => setTeamCode(e.target.value)}
@@ -226,14 +349,6 @@ export default function RegisterPage() {
                 ))}
               </select>
             </FormField>
-            <div className="grid grid-cols-2 gap-3 mt-4">
-              <FormField label="Second parent name">
-                <TextInput value={secondaryParentName} onChange={setSecondaryParentName} />
-              </FormField>
-              <FormField label="Second parent phone">
-                <TextInput value={secondaryParentPhone} onChange={setSecondaryParentPhone} type="tel" inputMode="tel" />
-              </FormField>
-            </div>
             <FormField label="Anything we should know?" className="mt-4">
               <textarea
                 value={notes}
