@@ -26,12 +26,17 @@ if [ -f "$GLOBAL_STATE" ]; then
   fi
 fi
 
-# Build with webpack (Turbopack chunk names cause MIME issues on Netlify CDN)
-echo ">>> Building with webpack..."
-npm run build
+# Build via `netlify build` so @netlify/plugin-nextjs repackages the SSR handler
+# (.netlify/functions-internal/___netlify-server-handler) from THIS build.
+# Chunk hashes change on every build — deploying a handler left over from an
+# older build makes its HTML reference _next chunks that no longer exist
+# (404 / ChunkLoadError on every page). This is exactly what broke /dashboard
+# on 2026-07-14: handler packaged 07-13, static chunks newer.
+echo ">>> Building via netlify build (npm run build + Next runtime packaging)..."
+npx netlify build
 
 # Copy static files + public assets into .next for Netlify CDN
-# (Netlify plugin onPostBuild fails on Windows, so we do this manually)
+# (kept from the pre-plugin era as a fallback; harmless if redundant)
 echo ">>> Preparing static assets..."
 rm -rf .next/_next
 mkdir -p .next/_next

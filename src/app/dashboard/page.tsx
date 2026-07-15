@@ -155,13 +155,31 @@ export default function Dashboard() {
 
   useEffect(() => { loadExistingInvoices(); }, [loadExistingInvoices]);
 
-  // Calculate balance: unpaid months x rate + unpaid line items
+  // Open Stripe invoices for a family, oldest month first — the billing truth.
+  const getOpenStripeInvoices = (parent: Parent): Array<{ month: string; amount: number; publicUrl: string; invoiceId: string }> => {
+    return Object.entries(parent.invoiceActivity || {})
+      .filter(([, a]) => a && (a.provider === 'stripe' || a.stripeInvoiceId) && a.stripeStatus === 'open')
+      .map(([month, a]) => ({ month, amount: a.amount || 0, publicUrl: a.publicUrl, invoiceId: a.stripeInvoiceId || '' }))
+      .sort((a, b) => a.month.localeCompare(b.month));
+  };
+
+  const isStripeManaged = (parent: Parent): boolean =>
+    Object.values(parent.invoiceActivity || {}).some(a => a && (a.provider === 'stripe' || !!a.stripeInvoiceId));
+
+  // Balance = Stripe truth. For Stripe-managed families the balance is exactly
+  // the sum of their OPEN invoices — a combined June+July invoice counts once,
+  // partial-amount deals keep their real invoiced amount. The old months × rate
+  // formula stays only as a fallback for families with no Stripe history.
   const getBalance = (parent: Parent): number => {
-    const rate = getMonthlyRate(parent);
-    const payments = parent.payments || {};
     const status = parent.status || 'active';
     if (status === 'exempt' || status === 'inactive') return 0;
 
+    if (isStripeManaged(parent)) {
+      return getOpenStripeInvoices(parent).reduce((sum, inv) => sum + inv.amount, 0);
+    }
+
+    const rate = getMonthlyRate(parent);
+    const payments = parent.payments || {};
     let unpaidMonths = 0;
     for (const col of monthColumns) {
       const p = payments[col.key];
@@ -197,6 +215,9 @@ export default function Dashboard() {
       const status = p.status || 'active';
       if (status !== 'active') return false;
       if (!p.phone) return false;
+      // Stripe-managed families are billed by the Stripe pipeline — never
+      // create Square drafts for them (would double-invoice).
+      if (isStripeManaged(p)) return false;
       if (getBalance(p) <= 0) return false;
       if (pendingInvoices.some(pi => pi.parentId === p.id)) return false;
       return true;
@@ -625,170 +646,49 @@ export default function Dashboard() {
     }
   };
 
-  // Send text to a single parent with their existing invoice link
-  // If dashboard balance doesn't match Square invoice, cancel old + create new
+  // Send text to a single parent with their OPEN Stripe invoice link(s).
+  // Stripe truth: this never creates, cancels, or re-amounts an invoice —
+  // the dashboard's computed balance is display-only. Invoice creation lives
+  // in the Stripe batch actions and the ops pipeline.
   const sendTextToParent = async (parent: Parent) => {
     const normalizedPhone = (parent.phone || '').replace(/\D/g, '').replace(/^1/, '');
-    const dashboardBalance = getBalance(parent);
-
     setTextingParent(parent.id);
+    const openInvoices = getOpenStripeInvoices(parent);
 
-    // Fetch fresh invoice data from Square
-    let publicUrl = '';
-    let amount = 0;
-    let invoiceId = '';
-    try {
-      const res = await fetch('/api/square/invoice/list-published');
-      const data = await res.json();
-      if (data.success && data.invoices) {
-        const match = data.invoices.find((inv: { phone: string }) =>
-          inv.phone.replace(/\D/g, '').replace(/^1/, '') === normalizedPhone
-        );
-        if (match) {
-          publicUrl = match.publicUrl;
-          amount = match.amount;
-          invoiceId = match.invoiceId;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch fresh invoice:', err);
-    }
-
-    // If amounts don't match, cancel old invoice and create a new one
-    if (invoiceId && amount !== dashboardBalance && dashboardBalance > 0) {
-      showNotification(`Updating invoice: $${amount} → $${dashboardBalance}...`, 'success');
-      try {
-        // Cancel old invoice
-        await fetch('/api/square/invoice/batch-cancel', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ invoiceIds: [invoiceId] }),
-        });
-
-        // Build line items from dashboard state
-        const rate = getMonthlyRate(parent);
-        const overdueMonths = getOverdueMonths(parent);
-        const unpaidExtras = (parent.lineItems || []).filter(li => li.status !== 'paid');
-        const lineItems: Array<{ description: string; amount: number; quantity: number }> = [];
-        for (const month of overdueMonths) {
-          const [y, mo] = month.split('-');
-          const monthLabel = new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short', year: 'numeric' });
-          lineItems.push({ description: `Monthly Fee - ${monthLabel}`, amount: rate, quantity: 1 });
-        }
-        for (const extra of unpaidExtras) {
-          lineItems.push({ description: extra.description, amount: extra.amount, quantity: 1 });
-        }
-
-        // Create new invoice
-        const createRes = await fetch('/api/square/invoice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: parent.phone,
-            customerId: parent.squareCustomerId,
-            lineItems,
-            message: getDefaultMessage(overdueMonths),
-            dueDate: getDefaultDueDate(),
-            playerName: (parent.playerNames || []).join(', ') || parent.firstName,
-            parentFirstName: parent.firstName,
-            parentLastName: parent.lastName,
-            billingMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-          }),
-        });
-        const createData = await createRes.json();
-
-        if (createData.success && createData.invoiceId) {
-          // Publish it
-          const pubRes = await fetch('/api/square/invoice/publish', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ invoiceId: createData.invoiceId }),
-          });
-          const pubData = await pubRes.json();
-          if (pubData.success && pubData.publicUrl) {
-            publicUrl = pubData.publicUrl;
-            amount = dashboardBalance;
-          }
-        }
-      } catch (err) {
-        console.error('Failed to recreate invoice:', err);
-        showNotification('Failed to update invoice — using existing link', 'error');
-      }
-    }
-
-    // If no invoice exists but parent owes, create one
-    if (!publicUrl && dashboardBalance > 0) {
-      try {
-        const rate = getMonthlyRate(parent);
-        const overdueMonths = getOverdueMonths(parent);
-        const unpaidExtras = (parent.lineItems || []).filter(li => li.status !== 'paid');
-        const lineItems: Array<{ description: string; amount: number; quantity: number }> = [];
-        for (const month of overdueMonths) {
-          const [y, mo] = month.split('-');
-          const monthLabel = new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short', year: 'numeric' });
-          lineItems.push({ description: `Monthly Fee - ${monthLabel}`, amount: rate, quantity: 1 });
-        }
-        for (const extra of unpaidExtras) {
-          lineItems.push({ description: extra.description, amount: extra.amount, quantity: 1 });
-        }
-
-        const createRes = await fetch('/api/square/invoice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            phone: parent.phone,
-            customerId: parent.squareCustomerId,
-            lineItems,
-            message: getDefaultMessage(overdueMonths),
-            dueDate: getDefaultDueDate(),
-            playerName: (parent.playerNames || []).join(', ') || parent.firstName,
-            parentFirstName: parent.firstName,
-            parentLastName: parent.lastName,
-            billingMonth: new Date().toLocaleString('default', { month: 'long', year: 'numeric' }),
-          }),
-        });
-        const createData = await createRes.json();
-        if (createData.success && createData.invoiceId) {
-          const pubRes = await fetch('/api/square/invoice/publish', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ invoiceId: createData.invoiceId }),
-          });
-          const pubData = await pubRes.json();
-          if (pubData.success && pubData.publicUrl) {
-            publicUrl = pubData.publicUrl;
-            amount = dashboardBalance;
-          }
-        }
-      } catch (err) {
-        console.error('Failed to create invoice:', err);
-        showNotification('Failed to create invoice', 'error');
+    if (openInvoices.length === 0) {
+      if (isStripeManaged(parent)) {
+        showNotification(`No open Stripe invoice for ${parent.firstName} — create one with the Stripe Invoices button first`, 'error');
         setTextingParent(null);
         return;
       }
-    }
-
-    if (!publicUrl) {
-      showNotification('No invoice could be created for this family', 'error');
+      // Legacy (pre-Stripe) family: reuse an existing published Square invoice if we have one.
+      const existingInv = existingInvoices.get(normalizedPhone);
+      if (!existingInv) {
+        showNotification(`No invoice on file for ${parent.firstName}`, 'error');
+        setTextingParent(null);
+        return;
+      }
+      const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${existingInv.amount} is ready. Pay here: ${existingInv.publicUrl} - Coach Jonas`;
+      setSendMethod('text');
+      setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount: existingInv.amount });
       setTextingParent(null);
       return;
     }
 
-    // Update cache
-    setExistingInvoices(prev => {
-      const next = new Map(prev);
-      next.set(normalizedPhone, { invoiceId: invoiceId, publicUrl, amount, name: `${parent.firstName} ${parent.lastName}` });
-      return next;
-    });
+    const total = openInvoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const monthLabel = (m: string) => {
+      const [y, mo] = m.split('-');
+      return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'short' });
+    };
+    // One open invoice (incl. combined multi-month) → single link with the real
+    // Stripe amount. Multiple open invoices → one link per invoice so the total
+    // and the hosted pages always agree.
+    const smsBody = openInvoices.length === 1
+      ? `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${total} is ready. Pay here: ${openInvoices[0].publicUrl} - Coach Jonas`
+      : `Hi ${parent.firstName}, you have ${openInvoices.length} AZ Flight Basketball payments open (total $${total}):\n${openInvoices.map(inv => `${monthLabel(inv.month)} $${inv.amount}: ${inv.publicUrl}`).join('\n')}\n- Coach Jonas`;
 
-    // Build trackable redirect URL — Square has no "viewed" API, so we route through
-    // /r/{parentId}/{month} which logs the click and forwards to the Square invoice page.
-    const trackUrl = `${window.location.origin}/r/${parent.id}/${currentMonth}`;
-    const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${amount} is ready. Pay here: ${trackUrl} - Coach Jonas`;
-
-    // Stash invoice details on the modal so the user can confirm-sent later
     setSendMethod('text');
-    setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount });
+    setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount: total });
     setTextingParent(null);
   };
 
@@ -1406,10 +1306,13 @@ export default function Dashboard() {
                     const now = new Date().toISOString();
                     const previous = parent.invoiceActivity?.[currentMonth];
                     const existingInv = existingInvoices.get((parent.phone || '').replace(/\D/g, '').replace(/^1/, ''));
+                    // Preserve every existing field (esp. Stripe's provider /
+                    // stripeInvoiceId / stripeStatus) — only stamp send-tracking.
                     const newActivity = {
-                      squareInvoiceId: existingInv?.invoiceId || previous?.squareInvoiceId || '',
-                      publicUrl: existingInv?.publicUrl || previous?.publicUrl || '',
-                      amount,
+                      ...(previous || {}),
+                      squareInvoiceId: previous?.squareInvoiceId || (previous?.stripeInvoiceId ? '' : existingInv?.invoiceId) || '',
+                      publicUrl: previous?.publicUrl || existingInv?.publicUrl || '',
+                      amount: previous?.amount ?? amount,
                       sentAt: now,
                       viewedAt: previous?.viewedAt ?? null,
                       viewCount: previous?.viewCount ?? 0,
