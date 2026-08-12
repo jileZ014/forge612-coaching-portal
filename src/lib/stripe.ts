@@ -27,6 +27,11 @@ export function processingFeeCents(amountCents: number): number {
  * Written by /api/stripe/connect at runtime, so it lives in Firestore rather
  * than build-time team-config.json.
  */
+/** Request options that run a call ON the club's connected account (direct charge). */
+export function connectOpts(accountId: string): { stripeAccount: string } | undefined {
+  return accountId ? { stripeAccount: accountId } : undefined;
+}
+
 export async function getConnectedAccountId(): Promise<string> {
   const { getAdminDb } = await import('@/lib/firebase-admin');
   const snap = await getAdminDb().collection('teams').doc(teamConfig.teamId).get();
@@ -41,6 +46,12 @@ export function getStripe(): Stripe {
     if (!secret) throw new Error('STRIPE_SECRET_KEY not set');
     _stripe = new Stripe(secret, {
       typescript: true,
+      // PINNED. On 2026-02-25.clover the Invoice object has no
+      // application_fee_amount field at all — Stripe accepts the param and
+      // silently drops it, so the platform would collect nothing and the club
+      // would receive nothing. Verified against the live test API 2026-08-12.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      apiVersion: '2025-02-24.acacia' as any,
     });
   }
   return _stripe;
@@ -86,8 +97,9 @@ export function customerPayloadFromParent(parent: Parent): Stripe.CustomerCreate
 }
 
 // Find or create a Stripe Customer for the parent. Idempotent.
-export async function ensureStripeCustomer(parent: Parent): Promise<Stripe.Customer> {
+export async function ensureStripeCustomer(parent: Parent, acct = ''): Promise<Stripe.Customer> {
   const stripe = getStripe();
+  const o = connectOpts(acct);
 
   // Email needs patching if missing OR points at an obsolete placeholder TLD
   // (`.local` is reserved special-use; Stripe accepts the format on customer
@@ -110,13 +122,13 @@ export async function ensureStripeCustomer(parent: Parent): Promise<Stripe.Custo
         firestoreParentId: parent.id,
         placeholderEmail: parent.email ? 'false' : 'true',
       },
-    });
+    }, o);
   };
 
   // 1) If we already have a Stripe Customer ID, fetch and verify it still exists.
   if (parent.stripeCustomerId) {
     try {
-      const existing = await stripe.customers.retrieve(parent.stripeCustomerId);
+      const existing = await stripe.customers.retrieve(parent.stripeCustomerId, undefined, o);
       if (!('deleted' in existing) || !existing.deleted) {
         const c = existing as Stripe.Customer;
         return needsEmailPatch(c) ? await patchCustomer(c) : c;
@@ -130,14 +142,14 @@ export async function ensureStripeCustomer(parent: Parent): Promise<Stripe.Custo
   const search = await stripe.customers.search({
     query: `metadata['firestoreParentId']:'${parent.id}'`,
     limit: 1,
-  });
+  }, o);
   if (search.data.length > 0) {
     const c = search.data[0];
     return needsEmailPatch(c) ? await patchCustomer(c) : c;
   }
 
   // 3) Create new
-  return await stripe.customers.create(customerPayloadFromParent(parent));
+  return await stripe.customers.create(customerPayloadFromParent(parent), o);
 }
 
 // Compute amount for a parent for a given month.
@@ -187,7 +199,9 @@ export async function createMonthlyInvoice(opts: {
   customerId: string;
 }> {
   const stripe = getStripe();
-  const customer = await ensureStripeCustomer(opts.parent);
+  const connectedAccountId = await getConnectedAccountId();
+  const o = connectOpts(connectedAccountId);
+  const customer = await ensureStripeCustomer(opts.parent, connectedAccountId);
   const amount = opts.amountUsd ?? computeMonthAmountUsd(opts.parent);
   if (amount <= 0) throw new Error(`No amount due for ${opts.parent.id} (${opts.month})`);
 
@@ -204,12 +218,11 @@ export async function createMonthlyInvoice(opts: {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 16);
   const idempotencyKey = `inv_${opts.parent.id}_${opts.month}_${Math.round(amount * 100)}_${requestId}`;
 
-  // Connect: if the club has onboarded, this is a DESTINATION charge — the invoice
-  // is created on the Forge612 platform account, the club's dues transfer to their
-  // connected account, and the platform keeps application_fee_amount. If they have
-  // not onboarded, fall back to a plain platform invoice (AZ Flight's original
-  // behaviour) so nothing regresses.
-  const connectedAccountId = await getConnectedAccountId();
+  // Connect: when the club has onboarded this is a DIRECT charge — customer and
+  // invoice both live ON their connected account, funds settle there, and the
+  // platform takes application_fee_amount. (Destination charges via transfer_data
+  // do NOT work on invoices: Stripe accepts the param and silently drops it.)
+  // Not onboarded => plain platform invoice, i.e. AZ Flight's original behaviour.
   const duesCents = Math.round(amount * 100);
   const feeCents = connectedAccountId ? processingFeeCents(duesCents) : 0;
 
@@ -221,12 +234,7 @@ export async function createMonthlyInvoice(opts: {
       days_until_due: opts.daysUntilDue ?? 7,
       auto_advance: false,
       description: `Monthly tuition for ${opts.month}`,
-      ...(connectedAccountId
-        ? {
-            application_fee_amount: feeCents,
-            transfer_data: { destination: connectedAccountId },
-          }
-        : {}),
+      ...(feeCents > 0 ? { application_fee_amount: feeCents } : {}),
       metadata: {
         firestoreParentId: opts.parent.id,
         month: opts.month,
@@ -236,13 +244,13 @@ export async function createMonthlyInvoice(opts: {
           : {}),
       },
     },
-    { idempotencyKey: `${idempotencyKey}_draft` },
+    { idempotencyKey: `${idempotencyKey}_draft`, ...(o ?? {}) },
   );
 
   // Idempotency may return the ORIGINAL response — which says status='draft'
   // even if the actual invoice has since been finalized. Refresh the live
   // state so we don't try to re-finalize an already-open invoice.
-  const draft = await stripe.invoices.retrieve(draftCached.id);
+  const draft = await stripe.invoices.retrieve(draftCached.id, undefined, o);
   if (draft.status === 'open' || draft.status === 'paid') {
     if (!draft.hosted_invoice_url) {
       throw new Error(`Stripe invoice ${draft.id} is ${draft.status} but has no hosted_invoice_url`);
@@ -265,7 +273,7 @@ export async function createMonthlyInvoice(opts: {
         currency: 'usd',
         description: buildInvoiceDescription(opts.month, opts.parent),
       },
-      { idempotencyKey: `${idempotencyKey}_item` },
+      { idempotencyKey: `${idempotencyKey}_item`, ...(o ?? {}) },
     );
     // Second line item: the processing surcharge the parent pays on top of dues.
     // Adding it here (rather than deducting from dues) is what keeps the club whole —
@@ -279,12 +287,12 @@ export async function createMonthlyInvoice(opts: {
           currency: 'usd',
           description: `${teamConfig.billing.processingFeeLabel} (${teamConfig.billing.processingFeePercent}%)`,
         },
-        { idempotencyKey: `${idempotencyKey}_fee` },
+        { idempotencyKey: `${idempotencyKey}_fee`, ...(o ?? {}) },
       );
     }
   } catch (itemErr) {
     try {
-      await stripe.invoices.voidInvoice(draft.id);
+      await stripe.invoices.voidInvoice(draft.id, undefined, o);
     } catch {
       // Best-effort void — log but don't mask the real error
       console.warn(`[stripe] could not void orphaned draft ${draft.id} after item-create failure`);
@@ -295,10 +303,10 @@ export async function createMonthlyInvoice(opts: {
   // 3) Finalize (gives us hosted_invoice_url). If this fails, void the draft.
   let finalized: Stripe.Invoice;
   try {
-    finalized = await stripe.invoices.finalizeInvoice(draft.id, { auto_advance: false });
+    finalized = await stripe.invoices.finalizeInvoice(draft.id, { auto_advance: false }, o);
   } catch (finalizeErr) {
     try {
-      await stripe.invoices.voidInvoice(draft.id);
+      await stripe.invoices.voidInvoice(draft.id, undefined, o);
     } catch {
       console.warn(`[stripe] could not void draft ${draft.id} after finalize failure`);
     }
@@ -308,7 +316,7 @@ export async function createMonthlyInvoice(opts: {
   // 4) Optionally trigger Stripe's auto-email (only if customer has an email)
   if (opts.autoSendEmail && opts.parent.email) {
     try {
-      await stripe.invoices.sendInvoice(finalized.id);
+      await stripe.invoices.sendInvoice(finalized.id, undefined, o);
     } catch (err) {
       // Non-fatal — we still got hosted URL for SMS path
       console.warn(`[stripe] sendInvoice failed for ${finalized.id}:`, err);
@@ -336,6 +344,7 @@ export async function listOpenInvoicesForParentMonth(
   customerId: string,
   parentId: string,
   month: string,
+  acct = '',
 ): Promise<Stripe.Invoice[]> {
   const stripe = getStripe();
   // Stripe doesn't allow filtering by metadata on /v1/invoices list, so list by customer + status
@@ -344,7 +353,7 @@ export async function listOpenInvoicesForParentMonth(
     customer: customerId,
     status: 'open',
     limit: 100,
-  });
+  }, connectOpts(acct));
   return list.data.filter(
     (inv) =>
       inv.metadata?.firestoreParentId === parentId &&
@@ -358,13 +367,15 @@ export async function voidOpenInvoicesForParentMonth(
   customerId: string,
   parentId: string,
   month: string,
+  acct = '',
 ): Promise<{ voided: number; voidedIds: string[] }> {
   const stripe = getStripe();
-  const open = await listOpenInvoicesForParentMonth(customerId, parentId, month);
+  const o = connectOpts(acct);
+  const open = await listOpenInvoicesForParentMonth(customerId, parentId, month, acct);
   const voidedIds: string[] = [];
   for (const inv of open) {
     try {
-      await stripe.invoices.voidInvoice(inv.id);
+      await stripe.invoices.voidInvoice(inv.id, undefined, o);
       voidedIds.push(inv.id);
     } catch (err) {
       console.warn(`[stripe] could not void invoice ${inv.id}:`, err);

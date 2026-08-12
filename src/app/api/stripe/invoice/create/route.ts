@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireCoach, isAuthError } from '@/lib/auth-helpers';
-import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth, MAX_INVOICE_USD } from '@/lib/stripe';
+import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth, getConnectedAccountId, MAX_INVOICE_USD } from '@/lib/stripe';
 import type { InvoiceActivity, Parent } from '@/types';
 
 // POST body:
@@ -60,8 +60,9 @@ export async function POST(req: NextRequest) {
   let voidedCount = 0;
   let voidedIds: string[] = [];
   try {
-    const customer = await ensureStripeCustomer(parent);
-    const result = await voidOpenInvoicesForParentMonth(customer.id, parentId, month);
+    const acct = await getConnectedAccountId();
+    const customer = await ensureStripeCustomer(parent, acct);
+    const result = await voidOpenInvoicesForParentMonth(customer.id, parentId, month, acct);
     voidedCount = result.voided;
     voidedIds = result.voidedIds;
   } catch (err) {

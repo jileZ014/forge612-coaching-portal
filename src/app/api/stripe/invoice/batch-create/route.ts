@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
 import { requireCoach, isAuthError } from '@/lib/auth-helpers';
-import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth } from '@/lib/stripe';
+import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth, getConnectedAccountId } from '@/lib/stripe';
 import type { InvoiceActivity, Parent } from '@/types';
 
 // POST body:
@@ -64,8 +64,9 @@ export async function POST(req: NextRequest) {
       // Fix for BLOCKER 2 (board QA 2026-05-03).
       let voidedExisting = 0;
       try {
-        const customer = await ensureStripeCustomer(parent);
-        const result = await voidOpenInvoicesForParentMonth(customer.id, parent.id, month);
+        const acct = await getConnectedAccountId();
+    const customer = await ensureStripeCustomer(parent, acct);
+        const result = await voidOpenInvoicesForParentMonth(customer.id, parent.id, month, acct);
         voidedExisting = result.voided;
       } catch (err) {
         console.warn(`[batch-create] pre-create void check failed for ${parent.id}:`, err);
