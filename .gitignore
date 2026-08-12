@@ -44,3 +44,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .tmp-*
+
+# service account keys + watcher state (never commit)
+.keys/
