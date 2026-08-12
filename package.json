@@ -8,7 +8,12 @@
     "start": "next start",
     "lint": "eslint",
     "deploy": "bash deploy.sh",
-    "deploy:rules": "firebase deploy --project flight-pay-az --only firestore:rules"
+    "deploy:rules": "firebase deploy --project flight-pay-az --only firestore:rules",
+    "tenant": "node scripts/use-team.mjs",
+    "use:azflight": "node scripts/use-team.mjs az-flight-hoops",
+    "use:yoties": "node scripts/use-team.mjs yoties-flag-football",
+    "deploy:yoties": "node scripts/use-team.mjs yoties-flag-football && bash deploy.sh yoties",
+    "deploy:rules:yoties": "firebase deploy --project yoties-flag-football --only firestore:rules"
   },
   "dependencies": {
     "firebase": "^12.11.0",

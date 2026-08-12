@@ -1,3 +1,4 @@
+import { teamConfig } from './team-config';
 import twilio from 'twilio';
 import type { SmsDelivery } from '@/types';
 import { toE164 } from './stripe';
@@ -53,7 +54,7 @@ export function composeInvoiceSms(opts: {
   hostedUrl: string;
 }): string {
   const lines = [
-    `Hi ${opts.parentFirstName}, AZ Flight Hoops ${opts.monthLabel} tuition is ready.`,
+    `Hi ${opts.parentFirstName}, ${teamConfig.teamName} ${opts.monthLabel} tuition is ready.`,
     `Amount: $${opts.amount.toFixed(2)}`,
     `Pay here: ${opts.hostedUrl}`,
     `Reply STOP to opt out.`,

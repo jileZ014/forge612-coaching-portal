@@ -1,5 +1,6 @@
 'use client';
 
+import { teamConfig } from '@/lib/team-config';
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
@@ -669,7 +670,7 @@ export default function Dashboard() {
         setTextingParent(null);
         return;
       }
-      const smsBody = `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${existingInv.amount} is ready. Pay here: ${existingInv.publicUrl} - Coach Jonas`;
+      const smsBody = `Hi ${parent.firstName}, your ${teamConfig.billingLabel} payment of $${existingInv.amount} is ready. Pay here: ${existingInv.publicUrl} - ${teamConfig.coachName}`;
       setSendMethod('text');
       setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount: existingInv.amount });
       setTextingParent(null);
@@ -685,8 +686,8 @@ export default function Dashboard() {
     // Stripe amount. Multiple open invoices → one link per invoice so the total
     // and the hosted pages always agree.
     const smsBody = openInvoices.length === 1
-      ? `Hi ${parent.firstName}, your AZ Flight Basketball payment of $${total} is ready. Pay here: ${openInvoices[0].publicUrl} - Coach Jonas`
-      : `Hi ${parent.firstName}, you have ${openInvoices.length} AZ Flight Basketball payments open (total $${total}):\n${openInvoices.map(inv => `${monthLabel(inv.month)} $${inv.amount}: ${inv.publicUrl}`).join('\n')}\n- Coach Jonas`;
+      ? `Hi ${parent.firstName}, your ${teamConfig.billingLabel} payment of $${total} is ready. Pay here: ${openInvoices[0].publicUrl} - ${teamConfig.coachName}`
+      : `Hi ${parent.firstName}, you have ${openInvoices.length} ${teamConfig.billingLabel} payments open (total $${total}):\n${openInvoices.map(inv => `${monthLabel(inv.month)} $${inv.amount}: ${inv.publicUrl}`).join('\n')}\n- ${teamConfig.coachName}`;
 
     setSendMethod('text');
     setSendTextModal({ parent, phone: normalizedPhone, message: smsBody, amount: total });
@@ -730,7 +731,7 @@ export default function Dashboard() {
                 <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#E8632A' }} />
                 Flight Pay
               </h1>
-              <p className="text-white/40 text-sm mt-1">AZ Flight Basketball · Unified Invoicing (Stripe + Twilio)</p>
+              <p className="text-white/40 text-sm mt-1">{teamConfig.billingLabel} · Unified Invoicing (Stripe + Twilio)</p>
             </div>
             <div className="flex items-center gap-2">
               <a href="/dashboard/registrations"
@@ -1972,11 +1973,11 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
   const isResendMode = invoices.some(inv => inv.publicUrl);
 
   const buildSmsBody = (inv: typeof current, publicUrl: string) => {
-    return `Hi ${inv.firstName}, your AZ Flight Basketball payment of $${inv.total} for ${
+    return `Hi ${inv.firstName}, your ${teamConfig.billingLabel} payment of $${inv.total} for ${
       inv.months.length > 0
         ? inv.months.map(m => { const [y, mo] = m.split('-'); return new Date(Number(y), Number(mo) - 1).toLocaleString('default', { month: 'long' }); }).join(', ')
         : 'this month'
-    } is ready. Pay here: ${publicUrl} - Coach Jonas`;
+    } is ready. Pay here: ${publicUrl} - ${teamConfig.coachName}`;
   };
 
   const advanceToNext = () => {

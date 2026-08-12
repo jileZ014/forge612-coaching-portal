@@ -1,5 +1,6 @@
 'use client';
 
+import { teamConfig } from '@/lib/team-config';
 import { useState } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
@@ -9,22 +10,10 @@ import { db } from '@/lib/firebase';
 // (client SDK, create-only pending rule) then pings Coach Jonas via /api/notify-registration.
 
 type TeamOption = { code: string; label: string };
-const TEAMS: TeamOption[] = [
-  { code: '9u', label: '9U' },
-  { code: '10u', label: '10U' },
-  { code: '12u/13u', label: '12U / 13U' },
-  { code: '14u', label: '14U' },
-  { code: '15u', label: '15U' },
-];
+const TEAMS: TeamOption[] = teamConfig.registration.ageGroups;
 
 type PlayerInput = { name: string; birthYear: string; gradYear: string; school: string };
 const emptyPlayer = (): PlayerInput => ({ name: '', birthYear: '', gradYear: '', school: '' });
-
-const WAIVER_URL =
-  'https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightWaiverandReleaseForm/formperma/YsZX8UohvyRTa9RJ7_AjWPo8Dbb-bADqzzniMNLF7pc';
-const CONDUCT_URL =
-  'https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightBasketballClubEnrollmentChecklis/formperma/bUGl_5b9IK7zDH3VBBnlOXo82CoPLK1_HxmACftpymk';
-const AAU_URL = 'https://play.aausports.org/joinaau/multimembershipapplication.aspx';
 
 export default function RegisterPage() {
   // Primary parent
@@ -102,7 +91,7 @@ export default function RegisterPage() {
         teamCode,
         teamLabel,
         notes: notes.trim(),
-        season: '2026-2027',
+        season: teamConfig.season,
         source: 'self-registration',
         createdAt: new Date().toISOString(),
       });
@@ -139,24 +128,22 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">You&rsquo;re registered!</h1>
           <p className="text-text-muted text-sm leading-relaxed">
-            Thanks, {parentFirstName.trim()}. Coach Jonas has been notified and will confirm your
-            spot shortly. You&rsquo;ll get a text with your first invoice once you&rsquo;re approved.
+            Thanks, {parentFirstName.trim()}. {teamConfig.coachName} has been notified and will confirm your
+            spot shortly. {teamConfig.registration.successNote}
           </p>
-          <p className="text-text-muted text-xs leading-relaxed mt-4">
-            Next steps: complete the{' '}
-            <a href={WAIVER_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-              Waiver &amp; Release
-            </a>{' '}
-            and{' '}
-            <a href={CONDUCT_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-              Code of Conduct
-            </a>
-            , and sign up for{' '}
-            <a href={AAU_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-              AAU membership
-            </a>{' '}
-            (club: Arizona Flight Basketball Club, code W3E3ED).
-          </p>
+          {teamConfig.registration.links.length > 0 && (
+            <p className="text-text-muted text-xs leading-relaxed mt-4">
+              Next steps: complete{' '}
+              {teamConfig.registration.links.map((l, i, arr) => (
+                <span key={l.url}>
+                  <a href={l.url} className="text-accent underline" target="_blank" rel="noreferrer">
+                    {l.label}
+                  </a>
+                  {i < arr.length - 2 ? ', ' : i === arr.length - 2 ? ' and ' : '.'}
+                </span>
+              ))}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -167,11 +154,11 @@ export default function RegisterPage() {
       <header className="border-b border-border bg-surface-elevated">
         <div className="max-w-xl mx-auto px-5 py-6">
           <div className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
-            AZ Flight Hoops &middot; 2026&ndash;2027 Season
+            {teamConfig.teamName} &middot; {teamConfig.season} Season
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mt-1 leading-tight">Player Registration</h1>
           <p className="text-sm text-text-muted mt-1">
-            Fill this out to join the club. Coach Jonas reviews every registration before it&rsquo;s
+            Fill this out to join the club. {teamConfig.coachName} reviews every registration before it&rsquo;s
             confirmed.
           </p>
         </div>
@@ -181,56 +168,37 @@ export default function RegisterPage() {
         {/* Registration info */}
         <section className="rounded-xl border border-border bg-surface-elevated p-5 mb-6 text-sm leading-relaxed">
           <h2 className="font-semibold mb-3">What to know</h2>
-          <p className="text-text-muted mb-3">
-            AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games,
-            tournaments, and equipment.
-          </p>
+          <p className="text-text-muted mb-3">{teamConfig.registration.intro}</p>
           <ul className="space-y-2 text-text-secondary">
-            <li>
-              <span className="font-medium text-foreground">Monthly dues:</span> $95 per player
-              ($170 for two players), due by the 7th of each month.
-            </li>
-            <li className="rounded-md px-3 py-2" style={{ background: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }}>
-              <span className="font-semibold text-foreground">Heads up:</span> starting{' '}
-              <span className="font-semibold text-foreground">September 2026</span>, monthly club
-              fees will increase.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">New players:</span>{' '}
-              your first payment is two months up front ($190), non-refundable, to hold your
-              player&rsquo;s spot (a two-month commitment). It&rsquo;s $95/month after that.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">Team kit:</span> $90 one-time (reversible
-              jersey + backpack).
-            </li>
-            <li>
-              <span className="font-medium text-foreground">Ways to pay:</span> monthly invoice by
-              text or email, Zelle to 303-908-6810, or check/cash.
-            </li>
-            <li>
-              <span className="font-medium text-foreground">AAU membership</span> is required. Sign
-              up at{' '}
-              <a href={AAU_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-                AAU
-              </a>{' '}
-              under &ldquo;Arizona Flight Basketball Club&rdquo; (code W3E3ED).
-            </li>
-            <li>
-              <span className="font-medium text-foreground">Also complete:</span>{' '}
-              <a href={WAIVER_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-                Waiver &amp; Release
-              </a>{' '}
-              and{' '}
-              <a href={CONDUCT_URL} className="text-accent underline" target="_blank" rel="noreferrer">
-                Code of Conduct
-              </a>
-              .
-            </li>
-            <li>
-              <span className="font-medium text-foreground">Team communication</span>{' '}
-              and schedules go out through the Band app (we&rsquo;ll invite the email you provide).
-            </li>
+            {teamConfig.registration.bullets.map((b, i) => (
+              <li
+                key={i}
+                className={b.highlight ? 'rounded-md px-3 py-2' : undefined}
+                style={
+                  b.highlight
+                    ? { background: 'color-mix(in srgb, var(--color-accent) 12%, transparent)' }
+                    : undefined
+                }
+              >
+                <span className={b.highlight ? 'font-semibold text-foreground' : 'font-medium text-foreground'}>
+                  {b.label}
+                </span>{' '}
+                {b.text}
+              </li>
+            ))}
+            {teamConfig.registration.links.length > 0 && (
+              <li>
+                <span className="font-medium text-foreground">Also complete:</span>{' '}
+                {teamConfig.registration.links.map((l, i, arr) => (
+                  <span key={l.url}>
+                    <a href={l.url} className="text-accent underline" target="_blank" rel="noreferrer">
+                      {l.label}
+                    </a>
+                    {i < arr.length - 2 ? ', ' : i === arr.length - 2 ? ' and ' : '.'}
+                  </span>
+                ))}
+              </li>
+            )}
           </ul>
         </section>
 

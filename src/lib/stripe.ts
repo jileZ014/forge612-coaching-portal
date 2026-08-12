@@ -1,3 +1,4 @@
+import { teamConfig } from './team-config';
 import Stripe from 'stripe';
 import type { Parent } from '@/types';
 
@@ -43,7 +44,7 @@ export function toE164(phone: string): string {
 // be created and the hosted_invoice_url generated; we deliver via Twilio SMS,
 // not Stripe email, so the placeholder never receives mail.
 function placeholderEmail(parentId: string): string {
-  return `invoice+${parentId}@azflighthoops.com`;
+  return `invoice+${parentId}@${teamConfig.invoiceEmailDomain}`;
 }
 
 // Includes Firestore parentId + month metadata so webhooks can route back.
@@ -142,7 +143,7 @@ export function buildInvoiceDescription(month: string, parent: Parent): string {
     : parent.rateType === 'special' ? 'Special rate'
     : parent.rateType === 'custom' ? 'Custom rate'
     : 'Regular rate';
-  return `AZ Flight Hoops — ${monthName} ${year} Tuition (${tier})`;
+  return `${teamConfig.teamName} — ${monthName} ${year} Tuition (${tier})`;
 }
 
 // Create + finalize a Stripe Invoice for a single month.

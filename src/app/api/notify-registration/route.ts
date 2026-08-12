@@ -40,7 +40,17 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[notify-registration] lookup failed:', err);
     // Registration itself is already saved; never fail the parent's submission on this.
-    return NextResponse.json({ ok: false, error: 'lookup unavailable' }, { status: 503 });
+    const diag =
+      process.env.DEBUG_ADMIN === '1'
+        ? {
+            code: (err as { code?: string })?.code ?? null,
+            message: String((err as Error)?.message ?? err).slice(0, 300),
+            hasKey: Boolean(process.env.FIREBASE_SERVICE_ACCOUNT_KEY),
+            keyLen: (process.env.FIREBASE_SERVICE_ACCOUNT_KEY ?? '').length,
+            projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? null,
+          }
+        : undefined;
+    return NextResponse.json({ ok: false, error: 'lookup unavailable', diag }, { status: 503 });
   }
 
   const parentName = s(

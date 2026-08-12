@@ -3,15 +3,37 @@
   "teamName": "Yoties Flag Football",
   "sport": "flag-football",
   "primaryColor": "#0A0A0A",
-  "accentColor": "#2D6A4F",
-  "accentColorLight": "#52B788",
-  "coachEmail": "",
-  "coachName": "",
-  "domain": "",
-  "firebaseProject": "",
+  "accentColor": "#E87517",
+  "accentColorLight": "#F0913F",
+  "coachEmail": "info@shemakesplays.org",
+  "coachName": "Coach Josh",
+  "domain": "yotiesfootball.com",
+  "firebaseProject": "yoties-flag-football",
   "stripeAccountId": "",
   "logoUrl": "/logo.png",
-  "tagline": "Flag On. Game On.",
+  "tagline": "Hunt. Howl. Score.",
+  "sportEmoji": "🏈",
+  "billingLabel": "Yoties Flag Football",
+  "invoiceEmailDomain": "shemakesplays.org",
+  "season": "2026-2027",
+  "duesBlurb": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit.",
+  "registration": {
+    "ageGroups": [
+      { "code": "10u", "label": "10U" },
+      { "code": "12u", "label": "12U" }
+    ],
+    "intro": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit. We field competitive girls flag football teams in North Phoenix.",
+    "bullets": [
+      { "label": "Divisions:", "text": "10U and 12U girls. No flag football experience required — if she loves to run and compete, we'll teach her the rest." },
+      { "label": "Where we play:", "text": "Brigade Football League plus local tournaments. Practices in the Desert Ridge / North Scottsdale / Cave Creek area." },
+      { "label": "Official affiliate:", "text": "we are an official NFL FLAG affiliate team." },
+      { "label": "Dues:", "text": "CONFIRM WITH COACH JOSH BEFORE LAUNCH — placeholder pending real fee schedule.", "highlight": true },
+      { "label": "Ways to pay:", "text": "monthly invoice by text or email." },
+      { "label": "Questions:", "text": "reach us at info@shemakesplays.org or DM @yotiesfootball on Instagram." }
+    ],
+    "links": [],
+    "successNote": "You'll get a text once your spot is confirmed."
+  },
   "sportConfig": {
     "playerLabel": "Player",
     "playersLabel": "Players",
@@ -19,7 +41,7 @@
     "practiceLabel": "Practice",
     "gameLabel": "Game",
     "seasonLabel": "Season",
-    "positionOptions": ["Quarterback", "Wide Receiver", "Center", "Rusher", "Safety"],
+    "positionOptions": ["Quarterback", "Wide Receiver", "Center", "Rusher", "Safety", "Cornerback"],
     "eventTypes": ["practice", "game", "tournament", "combine"]
   }
 }

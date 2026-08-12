@@ -1,3 +1,4 @@
+import { teamConfig } from '@/lib/team-config';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { squareClient } from '@/lib/square';
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
           buyNowPayLater: false,
           cashAppPay: false,
         },
-        title: `AZ Flight Basketball - ${billingMonth || 'Monthly Fee'}`,
+        title: `${teamConfig.billingLabel} - ${billingMonth || 'Monthly Fee'}`,
         description: message,
       },
       idempotencyKey: `invoice-${finalCustomerId}-${Date.now()}`,
