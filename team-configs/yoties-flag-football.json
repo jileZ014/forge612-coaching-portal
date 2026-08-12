@@ -10,7 +10,7 @@
   "domain": "yotiesfootball.com",
   "firebaseProject": "yoties-flag-football",
   "stripeAccountId": "",
-  "logoUrl": "/logo.png",
+  "logoUrl": "/tenants/yoties-flag-football/logo.png",
   "tagline": "Hunt. Howl. Score.",
   "sportEmoji": "🏈",
   "billingLabel": "Yoties Flag Football",
@@ -19,17 +19,42 @@
   "duesBlurb": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit.",
   "registration": {
     "ageGroups": [
-      { "code": "10u", "label": "10U" },
-      { "code": "12u", "label": "12U" }
+      {
+        "code": "10u",
+        "label": "10U"
+      },
+      {
+        "code": "12u",
+        "label": "12U"
+      }
     ],
     "intro": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit. We field competitive girls flag football teams in North Phoenix.",
     "bullets": [
-      { "label": "Divisions:", "text": "10U and 12U girls. No flag football experience required — if she loves to run and compete, we'll teach her the rest." },
-      { "label": "Where we play:", "text": "Brigade Football League plus local tournaments. Practices in the Desert Ridge / North Scottsdale / Cave Creek area." },
-      { "label": "Official affiliate:", "text": "we are an official NFL FLAG affiliate team." },
-      { "label": "Dues:", "text": "CONFIRM WITH COACH JOSH BEFORE LAUNCH — placeholder pending real fee schedule.", "highlight": true },
-      { "label": "Ways to pay:", "text": "monthly invoice by text or email." },
-      { "label": "Questions:", "text": "reach us at info@shemakesplays.org or DM @yotiesfootball on Instagram." }
+      {
+        "label": "Divisions:",
+        "text": "10U and 12U girls. No flag football experience required — if she loves to run and compete, we'll teach her the rest."
+      },
+      {
+        "label": "Where we play:",
+        "text": "Brigade Football League plus local tournaments. Practices in the Desert Ridge / North Scottsdale / Cave Creek area."
+      },
+      {
+        "label": "Official affiliate:",
+        "text": "we are an official NFL FLAG affiliate team."
+      },
+      {
+        "label": "Dues:",
+        "text": "CONFIRM WITH COACH JOSH BEFORE LAUNCH — placeholder pending real fee schedule.",
+        "highlight": true
+      },
+      {
+        "label": "Ways to pay:",
+        "text": "monthly invoice by text or email."
+      },
+      {
+        "label": "Questions:",
+        "text": "reach us at info@shemakesplays.org or DM @yotiesfootball on Instagram."
+      }
     ],
     "links": [],
     "successNote": "You'll get a text once your spot is confirmed."
@@ -41,7 +66,73 @@
     "practiceLabel": "Practice",
     "gameLabel": "Game",
     "seasonLabel": "Season",
-    "positionOptions": ["Quarterback", "Wide Receiver", "Center", "Rusher", "Safety", "Cornerback"],
-    "eventTypes": ["practice", "game", "tournament", "combine"]
-  }
+    "positionOptions": [
+      "Quarterback",
+      "Wide Receiver",
+      "Center",
+      "Rusher",
+      "Safety",
+      "Cornerback"
+    ],
+    "eventTypes": [
+      "practice",
+      "game",
+      "tournament",
+      "combine"
+    ]
+  },
+  "heroImageUrl": "/tenants/yoties-flag-football/hero-bg.jpg",
+  "ctaImageUrl": "/tenants/yoties-flag-football/cta-bg.jpg",
+  "demoOpponent": "Desert Storm",
+  "demoVenue": "Reach 11 Sports Complex, Phoenix",
+  "demoSchedule": [
+    {
+      "title": "Practice",
+      "date": "2026-04-07",
+      "startTime": "17:30",
+      "endTime": "19:00",
+      "location": "Athletic Republic, North Phoenix",
+      "type": "practice"
+    },
+    {
+      "title": "Practice",
+      "date": "2026-04-09",
+      "startTime": "17:30",
+      "endTime": "19:00",
+      "location": "Athletic Republic, North Phoenix",
+      "type": "practice"
+    },
+    {
+      "title": "Game vs Desert Storm",
+      "date": "2026-04-12",
+      "startTime": "10:00",
+      "endTime": "11:00",
+      "location": "Reach 11 Sports Complex, Phoenix",
+      "type": "game"
+    },
+    {
+      "title": "Practice",
+      "date": "2026-04-14",
+      "startTime": "17:30",
+      "endTime": "19:00",
+      "location": "Athletic Republic, North Phoenix",
+      "type": "practice"
+    },
+    {
+      "title": "Brigade League Play",
+      "date": "2026-04-19",
+      "startTime": "08:00",
+      "endTime": "14:00",
+      "location": "Reach 11 Sports Complex, Phoenix",
+      "type": "tournament"
+    },
+    {
+      "title": "Game vs Heat Wave",
+      "date": "2026-04-16",
+      "startTime": "18:00",
+      "endTime": "19:00",
+      "location": "Cave Creek Sports Complex",
+      "type": "game"
+    }
+  ]
 }

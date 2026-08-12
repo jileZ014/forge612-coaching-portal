@@ -15,7 +15,7 @@ export function CTASection() {
             {/* Background image */}
             <div className="absolute inset-0">
               <Image
-                src="/ball-bg.png"
+                src={teamConfig.ctaImageUrl}
                 alt=""
                 fill
                 className="object-cover object-center opacity-50"

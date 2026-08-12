@@ -128,7 +128,7 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-2xl font-bold mb-2">You&rsquo;re registered!</h1>
           <p className="text-text-muted text-sm leading-relaxed">
-            Thanks, {parentFirstName.trim()}. {teamConfig.coachName} has been notified and will confirm your
+            Thanks, {parentFirstName.trim()}. {teamConfig.coachName}{' '}has been notified and will confirm your
             spot shortly. {teamConfig.registration.successNote}
           </p>
           {teamConfig.registration.links.length > 0 && (
@@ -158,7 +158,7 @@ export default function RegisterPage() {
           </div>
           <h1 className="text-2xl md:text-3xl font-bold mt-1 leading-tight">Player Registration</h1>
           <p className="text-sm text-text-muted mt-1">
-            Fill this out to join the club. {teamConfig.coachName} reviews every registration before it&rsquo;s
+            Fill this out to join the club. {teamConfig.coachName}{' '}reviews every registration before it&rsquo;s
             confirmed.
           </p>
         </div>

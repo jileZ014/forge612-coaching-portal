@@ -1,5 +1,14 @@
 import config from '../../team-config.json';
 
+export interface DemoScheduleItem {
+  title: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  type: 'practice' | 'game' | 'tournament' | 'scrimmage' | 'combine';
+}
+
 export interface RegistrationBullet {
   /** Bold lead-in, e.g. "Monthly dues:" */
   label: string;
@@ -49,7 +58,17 @@ export interface TeamConfig {
   firebaseProject: string;
   stripeAccountId: string;
   logoUrl: string;
+  /** Full-bleed background behind the landing hero. */
+  heroImageUrl: string;
+  /** Background behind the landing call-to-action band. */
+  ctaImageUrl: string;
   tagline: string;
+  /** Opponent name used in the landing-page sample schedule. */
+  demoOpponent: string;
+  /** Venue used in the landing-page sample schedule. */
+  demoVenue: string;
+  /** Sample schedule shown on the public landing page. Illustrative only. */
+  demoSchedule: DemoScheduleItem[];
   /** Emoji used in coach notifications. 🏀 / 🏈 / 🏐 */
   sportEmoji: string;
   /** Club name as it appears to PARENTS in SMS and on invoices, e.g. "AZ Flight Basketball". */

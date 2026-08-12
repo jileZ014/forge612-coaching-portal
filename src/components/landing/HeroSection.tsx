@@ -11,7 +11,7 @@ export function HeroSection() {
       {/* Background image */}
       <div className="absolute inset-0">
         <Image
-          src="/hero-bg.png"
+          src={teamConfig.heroImageUrl}
           alt=""
           fill
           className="object-cover object-center opacity-60"
@@ -93,7 +93,7 @@ export function HeroSection() {
                   <div className="space-y-3">
                     <ScheduleRow day="Mon" date="Apr 7" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
                     <ScheduleRow day="Wed" date="Apr 9" label={teamConfig.sportConfig.practiceLabel} time="6:00 PM" />
-                    <ScheduleRow day="Sat" date="Apr 12" label={`${teamConfig.sportConfig.gameLabel} vs Monstarz`} time="10:00 AM" accent />
+                    <ScheduleRow day="Sat" date="Apr 12" label={`${teamConfig.sportConfig.gameLabel} vs ${teamConfig.demoOpponent}`} time="10:00 AM" accent />
                   </div>
                 </FloatingCard>
               </div>

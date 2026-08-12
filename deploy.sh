@@ -80,6 +80,19 @@ if [ -n "$EXPECTED_FB" ]; then
   echo "  BAKED FIREBASE PROJECT: $EXPECTED_FB (verified)"
 fi
 
+# Guard: every branded asset this tenant points at must actually exist, or the
+# portal ships with broken images (or silently falls back to another club's art).
+for ASSET in $(node -e "
+const c=require('./team-config.json');
+process.stdout.write([c.logoUrl,c.heroImageUrl,c.ctaImageUrl].filter(Boolean).join(' '));
+"); do
+  if [ ! -f "public${ASSET}" ]; then
+    echo "ERROR: branded asset missing: public${ASSET}"
+    exit 1
+  fi
+done
+echo "  BRANDED ASSETS: present"
+
 # Copy static files + public assets into .next for Netlify CDN
 # (kept from the pre-plugin era as a fallback; harmless if redundant)
 echo ">>> Preparing static assets..."

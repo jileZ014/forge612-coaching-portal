@@ -10,7 +10,7 @@
   "domain": "azflighthoops.com",
   "firebaseProject": "flight-pay-az",
   "stripeAccountId": "",
-  "logoUrl": "/logo.png",
+  "logoUrl": "/tenants/az-flight-hoops/logo.png",
   "tagline": "Building Champions On & Off the Court",
   "sportEmoji": "🏀",
   "billingLabel": "AZ Flight Basketball",
@@ -19,26 +19,72 @@
   "duesBlurb": "AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games, tournaments, and equipment.",
   "registration": {
     "ageGroups": [
-      { "code": "9u", "label": "9U" },
-      { "code": "10u", "label": "10U" },
-      { "code": "12u/13u", "label": "12U / 13U" },
-      { "code": "14u", "label": "14U" },
-      { "code": "15u", "label": "15U" }
+      {
+        "code": "9u",
+        "label": "9U"
+      },
+      {
+        "code": "10u",
+        "label": "10U"
+      },
+      {
+        "code": "12u/13u",
+        "label": "12U / 13U"
+      },
+      {
+        "code": "14u",
+        "label": "14U"
+      },
+      {
+        "code": "15u",
+        "label": "15U"
+      }
     ],
     "intro": "AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games, tournaments, and equipment.",
     "bullets": [
-      { "label": "Monthly dues:", "text": "$95 per player ($170 for two players), due by the 7th of each month." },
-      { "label": "Heads up:", "text": "starting September 2026, monthly club fees will increase.", "highlight": true },
-      { "label": "New players:", "text": "your first payment is two months up front ($190), non-refundable, to hold your player's spot (a two-month commitment). It's $95/month after that." },
-      { "label": "Team kit:", "text": "$90 one-time (reversible jersey + backpack)." },
-      { "label": "Ways to pay:", "text": "monthly invoice by text or email, Zelle to 303-908-6810, or check/cash." },
-      { "label": "AAU membership", "text": "is required. Sign up at aausports.org under \"Arizona Flight Basketball Club\" (code W3E3ED)." },
-      { "label": "Team communication", "text": "and schedules go out through the Band app (we'll invite the email you provide)." }
+      {
+        "label": "Monthly dues:",
+        "text": "$95 per player ($170 for two players), due by the 7th of each month."
+      },
+      {
+        "label": "Heads up:",
+        "text": "starting September 2026, monthly club fees will increase.",
+        "highlight": true
+      },
+      {
+        "label": "New players:",
+        "text": "your first payment is two months up front ($190), non-refundable, to hold your player's spot (a two-month commitment). It's $95/month after that."
+      },
+      {
+        "label": "Team kit:",
+        "text": "$90 one-time (reversible jersey + backpack)."
+      },
+      {
+        "label": "Ways to pay:",
+        "text": "monthly invoice by text or email, Zelle to 303-908-6810, or check/cash."
+      },
+      {
+        "label": "AAU membership",
+        "text": "is required. Sign up at aausports.org under \"Arizona Flight Basketball Club\" (code W3E3ED)."
+      },
+      {
+        "label": "Team communication",
+        "text": "and schedules go out through the Band app (we'll invite the email you provide)."
+      }
     ],
     "links": [
-      { "label": "Waiver & Release", "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightWaiverandReleaseForm/formperma/YsZX8UohvyRTa9RJ7_AjWPo8Dbb-bADqzzniMNLF7pc" },
-      { "label": "Code of Conduct", "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightBasketballClubEnrollmentChecklis/formperma/bUGl_5b9IK7zDH3VBBnlOXo82CoPLK1_HxmACftpymk" },
-      { "label": "AAU membership", "url": "https://play.aausports.org/joinaau/multimembershipapplication.aspx" }
+      {
+        "label": "Waiver & Release",
+        "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightWaiverandReleaseForm/formperma/YsZX8UohvyRTa9RJ7_AjWPo8Dbb-bADqzzniMNLF7pc"
+      },
+      {
+        "label": "Code of Conduct",
+        "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightBasketballClubEnrollmentChecklis/formperma/bUGl_5b9IK7zDH3VBBnlOXo82CoPLK1_HxmACftpymk"
+      },
+      {
+        "label": "AAU membership",
+        "url": "https://play.aausports.org/joinaau/multimembershipapplication.aspx"
+      }
     ],
     "successNote": "You'll get a text with your first invoice once you're approved."
   },
@@ -49,7 +95,72 @@
     "practiceLabel": "Practice",
     "gameLabel": "Game",
     "seasonLabel": "Season",
-    "positionOptions": ["Point Guard", "Shooting Guard", "Small Forward", "Power Forward", "Center"],
-    "eventTypes": ["practice", "game", "tournament", "scrimmage"]
-  }
+    "positionOptions": [
+      "Point Guard",
+      "Shooting Guard",
+      "Small Forward",
+      "Power Forward",
+      "Center"
+    ],
+    "eventTypes": [
+      "practice",
+      "game",
+      "tournament",
+      "scrimmage"
+    ]
+  },
+  "heroImageUrl": "/tenants/az-flight-hoops/hero-bg.png",
+  "ctaImageUrl": "/tenants/az-flight-hoops/cta-bg.png",
+  "demoOpponent": "AZ Monstarz",
+  "demoVenue": "Arizona Sports Complex, Mesa",
+  "demoSchedule": [
+    {
+      "title": "Practice",
+      "date": "2026-04-07",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
+      "type": "practice"
+    },
+    {
+      "title": "Practice",
+      "date": "2026-04-09",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
+      "type": "practice"
+    },
+    {
+      "title": "Game vs AZ Monstarz",
+      "date": "2026-04-12",
+      "startTime": "10:00",
+      "endTime": "11:30",
+      "location": "Arizona Sports Complex, Mesa",
+      "type": "game"
+    },
+    {
+      "title": "Practice",
+      "date": "2026-04-14",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
+      "type": "practice"
+    },
+    {
+      "title": "PHX Desert Classic",
+      "date": "2026-04-19",
+      "startTime": "08:00",
+      "endTime": "18:00",
+      "location": "Arizona Sports Complex, Mesa",
+      "type": "tournament"
+    },
+    {
+      "title": "Game vs West Valley Warriors",
+      "date": "2026-04-16",
+      "startTime": "19:00",
+      "endTime": "20:30",
+      "location": "Peoria Community Center",
+      "type": "game"
+    }
+  ]
 }
