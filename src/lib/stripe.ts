@@ -1,6 +1,15 @@
 import Stripe from 'stripe';
 import type { Parent } from '@/types';
 
+/**
+ * Hard ceiling on any single invoice, in USD.
+ *
+ * Monthly dues are ~$95-$190; the 2-months-upfront + kit case tops out near $280.
+ * This exists so a bad or hostile request can never mint a five-figure invoice
+ * against a real family — see the 2026-08-11 audit.
+ */
+export const MAX_INVOICE_USD = 2000;
+
 let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {

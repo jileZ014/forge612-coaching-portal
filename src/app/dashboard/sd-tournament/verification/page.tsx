@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { apiFetch } from '@/lib/api-client';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -79,7 +80,7 @@ export default function SdVerificationPage() {
     setRefreshing(true);
     try {
       const [paymentsResp, dbRecords] = await Promise.all([
-        fetch('/api/sd-tournament', { cache: 'no-store' }).then((r) => r.json()),
+        apiFetch('/api/sd-tournament', { cache: 'no-store' }).then((r) => r.json()),
         getSdVerificationRecords(),
       ]);
       if (paymentsResp.error) throw new Error(paymentsResp.error);

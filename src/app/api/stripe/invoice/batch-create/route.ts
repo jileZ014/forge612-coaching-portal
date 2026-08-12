@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth } from '@/lib/stripe';
 import type { InvoiceActivity, Parent } from '@/types';
 
@@ -18,6 +18,9 @@ import type { InvoiceActivity, Parent } from '@/types';
 // monthlyPayment for that month). Voids any existing OPEN Stripe invoice for that month before
 // creating fresh (so re-runs are safe and reflect rate changes).
 export async function POST(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   const body = await req.json().catch(() => ({}));
   const { month, parentIds, daysUntilDue, autoSendEmail } = body as {
     month?: string;
@@ -28,7 +31,8 @@ export async function POST(req: NextRequest) {
 
   if (!month) return NextResponse.json({ error: 'Missing month (e.g. "2026-05")' }, { status: 400 });
 
-  const snap = await getDocs(collection(db, 'parents'));
+  const adminDb = getAdminDb();
+  const snap = await adminDb.collection('parents').get();
   const all: Parent[] = [];
   snap.forEach((d) => all.push({ id: d.id, ...(d.data() as Omit<Parent, 'id'>) }));
 
@@ -93,7 +97,7 @@ export async function POST(req: NextRequest) {
       const next: Record<string, InvoiceActivity> = { ...(parent.invoiceActivity ?? {}) };
       next[month] = activity;
 
-      await updateDoc(doc(db, 'parents', parent.id), {
+      await adminDb.collection('parents').doc(parent.id).update({
         invoiceActivity: next,
         stripeCustomerId: customerId,
         updatedAt: new Date().toISOString(),

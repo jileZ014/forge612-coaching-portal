@@ -84,7 +84,7 @@ export default function RegisterPage() {
     try {
       const teamLabel = TEAMS.find((t) => t.code === teamCode)?.label ?? teamCode;
       const secName = [sec2First.trim(), sec2Last.trim()].filter(Boolean).join(' ');
-      await addDoc(collection(db, 'registrations'), {
+      const regRef = await addDoc(collection(db, 'registrations'), {
         status: 'pending',
         parentFirstName: parentFirstName.trim(),
         parentLastName: parentLastName.trim(),
@@ -112,14 +112,9 @@ export default function RegisterPage() {
         await fetch('/api/notify-registration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            parentName: [parentFirstName.trim(), parentLastName.trim()].filter(Boolean).join(' '),
-            phone: parentPhone.trim(),
-            email: parentEmail.trim(),
-            players: validPlayers.map((p) => p.name.trim()).join(', '),
-            team: teamLabel,
-            notes: notes.trim(),
-          }),
+          // Only the id — the server reads the stored doc and builds the message from it,
+          // so this ping cannot be forged with attacker-supplied content.
+          body: JSON.stringify({ registrationId: regRef.id }),
         });
       } catch {
         /* notify is best-effort */

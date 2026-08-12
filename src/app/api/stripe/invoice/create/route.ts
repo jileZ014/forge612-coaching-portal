@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth } from '@/lib/stripe';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
+import { createMonthlyInvoice, ensureStripeCustomer, voidOpenInvoicesForParentMonth, MAX_INVOICE_USD } from '@/lib/stripe';
 import type { InvoiceActivity, Parent } from '@/types';
 
 // POST body:
@@ -17,6 +17,9 @@ import type { InvoiceActivity, Parent } from '@/types';
 // parent.invoiceActivity[month]. Idempotent on re-runs of the SAME month — voids prior open Stripe
 // invoice for that month and creates fresh one (so amount changes are honored).
 export async function POST(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   const body = await req.json().catch(() => ({}));
   const { parentId, month, amount, daysUntilDue, autoSendEmail } = body as {
     parentId?: string;
@@ -30,9 +33,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing parentId or month' }, { status: 400 });
   }
 
-  const snap = await getDoc(doc(db, 'parents', parentId));
-  if (!snap.exists()) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
+  const parentRef = getAdminDb().collection('parents').doc(parentId);
+  const snap = await parentRef.get();
+  if (!snap.exists) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
   const parent: Parent = { id: snap.id, ...(snap.data() as Omit<Parent, 'id'>) };
+
+  // Never bill an unbounded client-supplied amount. An override is still allowed
+  // (coach-only, and coaches do adjust a month), but it must be a sane positive
+  // number within a hard ceiling — see the 2026-08-11 audit.
+  if (amount !== undefined) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0 || amount > MAX_INVOICE_USD) {
+      return NextResponse.json(
+        { error: `amount must be a positive number no greater than ${MAX_INVOICE_USD}` },
+        { status: 400 },
+      );
+    }
+  }
 
   if (parent.doNotInvoice) {
     return NextResponse.json({ error: 'Parent flagged doNotInvoice' }, { status: 400 });
@@ -80,7 +96,7 @@ export async function POST(req: NextRequest) {
     const next: Record<string, InvoiceActivity> = { ...(parent.invoiceActivity ?? {}) };
     next[month] = activity;
 
-    await updateDoc(doc(db, 'parents', parentId), {
+    await parentRef.update({
       invoiceActivity: next,
       stripeCustomerId: customerId,
       updatedAt: new Date().toISOString(),

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api-client';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Parent, MonthlyPayment, LineItem, PaymentMethod, ParentStatus, RateType, Team, TEAMS, RATE_CONFIG, CatalogItem } from '@/types';
@@ -135,7 +136,7 @@ export default function Dashboard() {
   // Load existing unpaid invoices from Square on mount
   const loadExistingInvoices = useCallback(async () => {
     try {
-      const res = await fetch('/api/square/invoice/list-published');
+      const res = await apiFetch('/api/square/invoice/list-published');
       const data = await res.json();
       if (data.success && data.invoices) {
         const map = new Map<string, { invoiceId: string; publicUrl: string; amount: number; name: string }>();
@@ -256,7 +257,7 @@ export default function Dashboard() {
 
         const total = (overdueMonths.length * rate) + unpaidExtras.reduce((s, li) => s + li.amount, 0);
 
-        const res = await fetch('/api/square/invoice', {
+        const res = await apiFetch('/api/square/invoice', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -370,7 +371,7 @@ export default function Dashboard() {
     if (!confirm('Sync ALL parents into Stripe as Customers? This is idempotent — re-runs are safe.')) return;
     setStripeSyncing(true);
     try {
-      const res = await fetch('/api/stripe/customer-sync', {
+      const res = await apiFetch('/api/stripe/customer-sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ all: true }),
@@ -396,7 +397,7 @@ export default function Dashboard() {
     if (!confirm(`Create Stripe invoices for ${month}? This finalizes invoices (parents see hosted URL once we send the SMS).`)) return;
     setStripeBatchCreating(true);
     try {
-      const res = await fetch('/api/stripe/invoice/batch-create', {
+      const res = await apiFetch('/api/stripe/invoice/batch-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month, daysUntilDue: 7, autoSendEmail: false }),
@@ -422,7 +423,7 @@ export default function Dashboard() {
     if (!confirm(`Send SMS via Twilio to all families with a Stripe invoice for ${month}? Goes out automatically — no Phone Link.`)) return;
     setSmsSending(true);
     try {
-      const res = await fetch('/api/sms/invoice', {
+      const res = await apiFetch('/api/sms/invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ month }),
@@ -515,7 +516,7 @@ export default function Dashboard() {
   const syncWithSquare = async () => {
     setSyncing(true);
     try {
-      const response = await fetch('/api/square/sync', { method: 'POST' });
+      const response = await apiFetch('/api/square/sync', { method: 'POST' });
       const data = await response.json();
       if (data.success) {
         const s = data.summary;
@@ -541,7 +542,7 @@ export default function Dashboard() {
     if (!confirm('Assign teams to all families based on roster?')) return;
     setMigrating(true);
     try {
-      const response = await fetch('/api/migrate', { method: 'PUT' });
+      const response = await apiFetch('/api/migrate', { method: 'PUT' });
       const data = await response.json();
       if (data.success) {
         showNotification(`Teams assigned: ${data.updated} updated, ${data.unmatched} unmatched`, 'success');
@@ -563,7 +564,7 @@ export default function Dashboard() {
   const resendTexts = async () => {
     setResendLoading(true);
     try {
-      const res = await fetch('/api/square/invoice/list-published');
+      const res = await apiFetch('/api/square/invoice/list-published');
       const data = await res.json();
       if (!data.success) {
         showNotification(data.error || 'Failed to fetch invoices', 'error');
@@ -871,7 +872,7 @@ export default function Dashboard() {
                                 onClick={async () => {
                                   if (!confirm(`Mark ${p.firstName} as NOT texted? (This clears the sent/viewed history for ${currentMonthLabel} only.)`)) return;
                                   try {
-                                    const res = await fetch('/api/audit/clear-sent', {
+                                    const res = await apiFetch('/api/audit/clear-sent', {
                                       method: 'POST',
                                       headers: { 'Content-Type': 'application/json' },
                                       body: JSON.stringify({ parentIds: [p.id], month: currentMonth }),
@@ -1394,7 +1395,7 @@ export default function Dashboard() {
           onLoadCatalog={async () => {
             if (catalogItems.length > 0) return;
             try {
-              const res = await fetch('/api/square/catalog');
+              const res = await apiFetch('/api/square/catalog');
               const data = await res.json();
               if (data.success) setCatalogItems(data.items);
             } catch { /* ignore */ }
@@ -1802,7 +1803,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
         lineItems.push({ description: extra.description, amount: extra.amount, quantity: 1 });
       }
 
-      const response = await fetch('/api/square/invoice', {
+      const response = await apiFetch('/api/square/invoice', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1999,7 +2000,7 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
       setPublishing(true);
       setPublishError('');
       try {
-        const res = await fetch('/api/square/invoice/publish', {
+        const res = await apiFetch('/api/square/invoice/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ invoiceId: current.invoiceId }),

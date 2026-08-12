@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { squareClient } from '@/lib/square';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireCoach(request);
+  if (isAuthError(auth)) return auth;
+
   try {
     const body = await request.json();
     const { invoiceId }: { invoiceId: string } = body;

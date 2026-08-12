@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { squareClient } from '@/lib/square';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '').replace(/^1/, '');
@@ -30,6 +30,9 @@ function parseMonthsFromOrder(lineItems: Array<{ name?: string }>): string[] {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireCoach(request);
+  if (isAuthError(auth)) return auth;
+
   try {
     // Get location
     const locationsResult = await squareClient.locations.list();
@@ -71,8 +74,8 @@ export async function POST(request: NextRequest) {
     const cancelledInvoices = allInvoices.filter(inv => inv.status === 'CANCELED');
 
     // Load all parents from Firestore
-    const parentsRef = collection(db, 'parents');
-    const snapshot = await getDocs(parentsRef);
+    const parentsRef = getAdminDb().collection('parents');
+    const snapshot = await parentsRef.get();
 
     // Build phone-to-parent lookup
     const phoneToParent = new Map<string, { id: string; data: Record<string, unknown> }>();
@@ -145,8 +148,8 @@ export async function POST(request: NextRequest) {
         }
 
         if (Object.keys(updates).length > 0) {
-          const parentRef = doc(db, 'parents', parent.id);
-          await updateDoc(parentRef, updates);
+          const parentRef = getAdminDb().collection('parents').doc(parent.id);
+          await parentRef.update(updates);
         }
 
         matched++;
@@ -193,7 +196,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireCoach(request);
+  if (isAuthError(auth)) return auth;
+
   try {
     const result = await squareClient.customers.list();
     const customers = result.data || [];

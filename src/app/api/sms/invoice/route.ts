@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { composeInvoiceSms, sendSms, sendSmsBatch } from '@/lib/twilio-invoice';
 import type { InvoiceActivity, Parent } from '@/types';
 
@@ -26,6 +26,9 @@ import type { InvoiceActivity, Parent } from '@/types';
 // - Updates parent.invoiceActivity[month].sentAt + parent.lastTexted on success.
 // - Errors per-recipient do NOT abort the batch.
 export async function POST(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   const body = await req.json().catch(() => ({}));
   const { month, parentIds, parentId, body: customBody, resend } = body as {
     month?: string;
@@ -37,8 +40,8 @@ export async function POST(req: NextRequest) {
 
   // ---------- Mode 2: single custom send ----------
   if (parentId && customBody && !resend) {
-    const snap = await getDoc(doc(db, 'parents', parentId));
-    if (!snap.exists()) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
+    const snap = await getAdminDb().collection('parents').doc(parentId).get();
+    if (!snap.exists) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
     const parent: Parent = { id: snap.id, ...(snap.data() as Omit<Parent, 'id'>) };
     try {
       const delivery = await sendSms({ to: parent.phone, body: customBody });
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
           updates.invoiceActivity = next;
         }
       }
-      await updateDoc(doc(db, 'parents', parentId), updates);
+      await getAdminDb().collection('parents').doc(parentId).update(updates);
       return NextResponse.json({ ok: true, delivery });
     } catch (err) {
       return NextResponse.json(
@@ -64,8 +67,8 @@ export async function POST(req: NextRequest) {
 
   // ---------- Mode 3: single resend ----------
   if (parentId && month && resend) {
-    const snap = await getDoc(doc(db, 'parents', parentId));
-    if (!snap.exists()) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
+    const snap = await getAdminDb().collection('parents').doc(parentId).get();
+    if (!snap.exists) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
     const parent: Parent = { id: snap.id, ...(snap.data() as Omit<Parent, 'id'>) };
     const activity = parent.invoiceActivity?.[month];
     if (!activity?.publicUrl) {
@@ -87,7 +90,7 @@ export async function POST(req: NextRequest) {
         sentAt: ts,
         lastReminderAt: activity.sentAt ? ts : activity.lastReminderAt,
       };
-      await updateDoc(doc(db, 'parents', parentId), {
+      await getAdminDb().collection('parents').doc(parentId).update({
         invoiceActivity: next,
         lastTexted: ts,
         updatedAt: ts,
@@ -109,7 +112,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const allSnap = await getDocs(collection(db, 'parents'));
+  const allSnap = await getAdminDb().collection('parents').get();
   const all: Parent[] = [];
   allSnap.forEach((d) => all.push({ id: d.id, ...(d.data() as Omit<Parent, 'id'>) }));
 
@@ -153,7 +156,7 @@ export async function POST(req: NextRequest) {
     };
     const nextActivity: Record<string, InvoiceActivity> = { ...(parent.invoiceActivity ?? {}) };
     nextActivity[month] = updated;
-    await updateDoc(doc(db, 'parents', parent.id), {
+    await getAdminDb().collection('parents').doc(parent.id).update({
       invoiceActivity: nextActivity,
       lastTexted: result.ok ? ts : parent.lastTexted,
       updatedAt: ts,

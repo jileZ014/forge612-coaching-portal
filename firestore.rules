@@ -1,19 +1,53 @@
 rules_version = '2';
-// Updated 2026-05-04 — added families/communications/documents (coach-only PII)
-// for v0 CRM port from genesis-elite. Existing parents/ + teams/{teamId}/* rules preserved.
+// Updated 2026-08-11 — security hardening from the Fable+Sol production-readiness audit.
+//
+// WHAT CHANGED AND WHY:
+//   1. /parents was `allow read, write: if true` — every family's name, phone, email,
+//      balance and payment history was world-readable AND world-writable. Now coach-only.
+//      This was only viable because 7 API routes used the CLIENT SDK server-side; those
+//      routes were migrated to firebase-admin (which bypasses rules) in the same change.
+//   2. teams/{id}/players, fees, payments, schedule were `allow read: if true`, exposing
+//      minors' names, birth years, schools and parent contacts. Verified no public page
+//      reads them (the /pay page is a static demo), so they are now coach-only.
+//   3. sdTournamentRoster was `allow read, write: if true` — minors' roster data was
+//      world readable, writable AND deletable. Now coach-only. SEE THE REVERT NOTE BELOW.
+//   4. The registrations rule hardcoded `teams/az-flight-hoops` inline. Tenant identity is
+//      now declared once in tenantId() so a fork edits exactly one line.
+//
+// DEPLOY: npm run deploy:rules   (firebase --only firestore:rules, project flight-pay-az)
+// REQUIRES: FIREBASE_SERVICE_ACCOUNT_KEY set in the Netlify environment, or every
+//           migrated API route fails closed. Set that BEFORE deploying these rules.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Parents collection — used by Flight_Pay invoicing dashboard (flat collection)
-    // TODO: tighten once login is wired across the parents path
-    match /parents/{parentId} {
-      allow read, write: if true;
+    // ---- tenant identity -------------------------------------------------
+    // The single place this deployment's club is named. Forking for another club
+    // means changing this string (and team-config.json) — nothing else in this file.
+    function tenantId() {
+      return 'az-flight-hoops';
     }
 
-    // Public self-registration. The public /register form CREATEs a shape-checked
-    // pending doc (client SDK); no public reads. Only the coach can read + approve/reject
-    // (update). On approval the coach client fans out to parents + families/players.
+    function isCoach(teamId) {
+      return request.auth != null
+        && request.auth.token.email == get(/databases/$(database)/documents/teams/$(teamId)).data.coachEmail;
+    }
+
+    function isTenantCoach() {
+      return isCoach(tenantId());
+    }
+
+    // ---- billing ---------------------------------------------------------
+    // Flat collection used by the invoicing dashboard. Contains full family PII and
+    // payment history. Coach-only: the dashboard reads it as the signed-in coach, and
+    // all server-side writes go through firebase-admin, which bypasses these rules.
+    match /parents/{parentId} {
+      allow read, write: if isTenantCoach();
+    }
+
+    // ---- public self-registration ---------------------------------------
+    // The only public write in the system. Create-only and shape-checked; no public
+    // reads. On approval the coach fans out to parents + families/players.
     match /registrations/{regId} {
       allow create: if request.resource.data.status == 'pending'
                     && request.resource.data.parentFirstName is string
@@ -22,75 +56,68 @@ service cloud.firestore {
                     && request.resource.data.players is list
                     && request.resource.data.players.size() > 0
                     && request.resource.data.players.size() <= 8;
-      allow read, update: if request.auth != null
-                    && request.auth.token.email == get(/databases/$(database)/documents/teams/az-flight-hoops).data.coachEmail;
+      allow read, update: if isTenantCoach();
       allow delete: if false;
     }
 
-    // Helper: check if the authenticated user is the coach for this team
-    function isCoach(teamId) {
-      return request.auth != null &&
-        request.auth.token.email == get(/databases/$(database)/documents/teams/$(teamId)).data.coachEmail;
-    }
-
-    // Team document — public read for team info, coach write
+    // ---- team ------------------------------------------------------------
+    // Public read retained: club name, colors and tagline are non-sensitive and the
+    // landing surface may render them. No public write.
     match /teams/{teamId} {
       allow read: if true;
       allow write: if isCoach(teamId);
     }
 
-    // Players — public read (for pay page lookup via client), coach write
+    // ---- roster + money (minors' PII) -----------------------------------
+    // Previously public-read for a /pay lookup that no longer exists. Verified 2026-08-11
+    // that no unauthenticated page reads these.
     match /teams/{teamId}/players/{playerId} {
-      allow read: if true;
-      allow write: if isCoach(teamId);
+      allow read, write: if isCoach(teamId);
     }
 
-    // Fees — public read (for pay page), coach write
     match /teams/{teamId}/fees/{feeId} {
-      allow read: if true;
-      allow write: if isCoach(teamId);
+      allow read, write: if isCoach(teamId);
     }
 
-    // Payments — public read (for pay page lookup), coach write
     match /teams/{teamId}/payments/{paymentId} {
-      allow read: if true;
-      allow write: if isCoach(teamId);
+      allow read, write: if isCoach(teamId);
     }
 
-    // Schedule — public read, coach write
     match /teams/{teamId}/schedule/{eventId} {
-      allow read: if true;
-      allow write: if isCoach(teamId);
+      allow read, write: if isCoach(teamId);
     }
 
-    // CRM v0 — coach-only (PII)
-    // Families: parent contacts, lifecycle, tags, do-not-contact flag
+    // ---- CRM (coach-only PII) -------------------------------------------
     match /teams/{teamId}/families/{familyId} {
       allow read, write: if isCoach(teamId);
     }
 
-    // Communications: SMS/email/notes log per family
     match /teams/{teamId}/communications/{commId} {
       allow read, write: if isCoach(teamId);
     }
 
-    // Documents: medical forms, waivers, photos (metadata; binaries in Storage)
     match /teams/{teamId}/documents/{docId} {
       allow read, write: if isCoach(teamId);
     }
 
-    // SD Tournament verification checklist — coach-only writes from /dashboard/sd-tournament/verification
     match /teams/{teamId}/sdTournamentVerification/{paymentId} {
       allow read, write: if isCoach(teamId);
     }
 
-    // SD Tournament roster — public read+write so the 6 head coaches can submit
-    // their team's roster via shared link /roster/{teamCode} without an account.
-    // Trust model: links are shared only with the 6 coaches Jonas knows; data is
-    // basic roster info (name, age, grade, HS, parent contact) already shared
-    // with tournament organizers. Tighten with team-code tokens if needed later.
+    // ---- SD tournament roster -------------------------------------------
+    // BEHAVIOR CHANGE 2026-08-11. This was public read/write/delete so six head coaches
+    // could submit rosters via a shared /roster/{teamCode} link without an account. That
+    // left minors' names, birthdays, ages, schools, grades and parent contacts open to
+    // anyone who had or guessed a link — and editable or deletable by them.
+    //
+    // The San Diego tournament ran in May 2026. Locking it to the coach on the assumption
+    // it is finished.
+    //
+    // TO REVERT (only if those six coaches still need account-free access):
+    //   allow read, write: if true;
+    // The durable fix is per-team link tokens rather than an open collection.
     match /teams/{teamId}/sdTournamentRoster/{playerId} {
-      allow read, write: if true;
+      allow read, write: if isCoach(teamId);
     }
   }
 }

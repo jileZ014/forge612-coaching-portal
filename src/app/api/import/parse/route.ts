@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import * as XLSX from 'xlsx';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireCoach(request);
+  if (isAuthError(auth)) return auth;
+
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;

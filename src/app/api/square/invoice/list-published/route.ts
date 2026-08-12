@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { squareClient } from '@/lib/square';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireCoach(request);
+  if (isAuthError(auth)) return auth;
+
   try {
     // Get location ID
     const locationsResult = await squareClient.locations.list();

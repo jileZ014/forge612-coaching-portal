@@ -1,12 +1,15 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   try {
-    const parentsRef = collection(db, 'parents');
-    const snapshot = await getDocs(parentsRef);
+    const parentsRef = getAdminDb().collection('parents');
+    const snapshot = await parentsRef.get();
 
     let updated = 0;
     let skipped = 0;
@@ -51,8 +54,8 @@ export async function POST() {
       }
 
       if (Object.keys(updates).length > 0) {
-        const parentRef = doc(db, 'parents', docSnap.id);
-        await updateDoc(parentRef, updates);
+        const parentRef = getAdminDb().collection('parents').doc(docSnap.id);
+        await parentRef.update(updates);
         updated++;
         results.push(`Updated ${data.firstName} ${data.lastName}: ${Object.keys(updates).join(', ')}`);
       } else {
@@ -109,10 +112,13 @@ const FULL_NAME_OVERRIDES: Record<string, string> = {
   'doug ': '14u',
 };
 
-export async function PUT() {
+export async function PUT(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   try {
-    const parentsRef = collection(db, 'parents');
-    const snapshot = await getDocs(parentsRef);
+    const parentsRef = getAdminDb().collection('parents');
+    const snapshot = await parentsRef.get();
 
     // Build lastName -> team lookup
     const lastNameToTeam = new Map<string, string>();
@@ -134,8 +140,8 @@ export async function PUT() {
       const team = FULL_NAME_OVERRIDES[fullName] || lastNameToTeam.get(lastName);
 
       if (team) {
-        const parentRef = doc(db, 'parents', docSnap.id);
-        await updateDoc(parentRef, { team });
+        const parentRef = getAdminDb().collection('parents').doc(docSnap.id);
+        await parentRef.update({ team });
         updated++;
         results.push(`${data.firstName} ${data.lastName} → ${team}`);
       } else {

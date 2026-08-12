@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebase-admin';
-import { verifyAuthToken, isAuthError } from '@/lib/auth-helpers';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { teamConfig } from '@/lib/team-config';
 
 const TEAM_ID = teamConfig.teamId;
 
 export async function POST(req: NextRequest) {
-  const authResult = await verifyAuthToken(req);
+  const authResult = await requireCoach(req);
   if (isAuthError(authResult)) return authResult;
 
   let body: {

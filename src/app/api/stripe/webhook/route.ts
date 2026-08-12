@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
 import { getStripe, paymentMethodFromPaidInvoice } from '@/lib/stripe';
 import type Stripe from 'stripe';
 import type { InvoiceActivity, MonthlyPayment, Parent } from '@/types';
@@ -79,9 +78,9 @@ async function handleInvoiceEvent(event: Stripe.Event) {
     return;
   }
 
-  const parentRef = doc(db, 'parents', parentId);
-  const snap = await (await import('firebase/firestore')).getDoc(parentRef);
-  if (!snap.exists()) {
+  const parentRef = getAdminDb().collection('parents').doc(parentId);
+  const snap = await parentRef.get();
+  if (!snap.exists) {
     console.warn('[stripe.webhook] parent not found for invoice:', invoice.id);
     return;
   }
@@ -142,16 +141,16 @@ async function handleInvoiceEvent(event: Stripe.Event) {
     }
   }
 
-  await updateDoc(parentRef, updates);
+  await parentRef.update(updates);
 }
 
 async function handleCustomerUpdate(customer: Stripe.Customer) {
   const parentId = customer.metadata?.firestoreParentId;
   if (!parentId) return;
 
-  const parentRef = doc(db, 'parents', parentId);
-  const snap = await (await import('firebase/firestore')).getDoc(parentRef);
-  if (!snap.exists()) return;
+  const parentRef = getAdminDb().collection('parents').doc(parentId);
+  const snap = await parentRef.get();
+  if (!snap.exists) return;
 
   const updates: Record<string, unknown> = {
     updatedAt: new Date().toISOString(),
@@ -159,5 +158,5 @@ async function handleCustomerUpdate(customer: Stripe.Customer) {
   if (customer.email) updates.email = customer.email;
   if (customer.phone) updates.phone = customer.phone;
 
-  await updateDoc(parentRef, updates);
+  await parentRef.update(updates);
 }

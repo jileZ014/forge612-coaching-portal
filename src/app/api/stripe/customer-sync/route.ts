@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebase-admin';
+import { requireCoach, isAuthError } from '@/lib/auth-helpers';
 import { ensureStripeCustomer } from '@/lib/stripe';
 import type { Parent } from '@/types';
 
@@ -11,6 +11,9 @@ import type { Parent } from '@/types';
 //
 // Returns per-parent result. Failures are reported per item, do not abort the batch.
 export async function POST(req: NextRequest) {
+  const auth = await requireCoach(req);
+  if (isAuthError(auth)) return auth;
+
   const body = await req.json().catch(() => ({}));
   const { parentId, all, force } = body as { parentId?: string; all?: boolean; force?: boolean };
 
@@ -20,11 +23,11 @@ export async function POST(req: NextRequest) {
 
   const parents: Parent[] = [];
   if (parentId) {
-    const snap = await getDoc(doc(db, 'parents', parentId));
-    if (!snap.exists()) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
+    const snap = await getAdminDb().collection('parents').doc(parentId).get();
+    if (!snap.exists) return NextResponse.json({ error: 'parent not found' }, { status: 404 });
     parents.push({ id: snap.id, ...(snap.data() as Omit<Parent, 'id'>) });
   } else {
-    const snap = await getDocs(collection(db, 'parents'));
+    const snap = await getAdminDb().collection('parents').get();
     snap.forEach((d) => {
       const p = { id: d.id, ...(d.data() as Omit<Parent, 'id'>) };
       if (force || !p.stripeCustomerId) parents.push(p);
@@ -43,7 +46,7 @@ export async function POST(req: NextRequest) {
     try {
       const customer = await ensureStripeCustomer(parent);
       if (parent.stripeCustomerId !== customer.id) {
-        await updateDoc(doc(db, 'parents', parent.id), {
+        await getAdminDb().collection('parents').doc(parent.id).update({
           stripeCustomerId: customer.id,
           updatedAt: new Date().toISOString(),
         });
