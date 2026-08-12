@@ -31,17 +31,21 @@ export function CTASection() {
 
             <div className="relative p-10 md:p-16 max-w-xl">
               <h2 className="font-display text-3xl md:text-4xl tracking-tighter leading-none text-foreground mb-4">
-                Ready to pay your fees?
+                {teamConfig.features?.publicPayPage
+                  ? 'Ready to pay your fees?'
+                  : `Ready to play for ${teamConfig.teamName}?`}
               </h2>
               <p className="text-base text-text-secondary leading-relaxed mb-8 max-w-[45ch]">
-                Look up your balance and pay online in under a minute. Secure payments via Stripe.
+                {teamConfig.features?.publicPayPage
+                  ? 'Look up your balance and pay online in under a minute. Secure payments via Stripe.'
+                  : `Register in under a minute and ${teamConfig.coachName} will reach out to confirm your spot. Dues are billed monthly, paid online via Stripe.`}
               </p>
               <Link
-                href="/pay"
+                href={teamConfig.features?.publicPayPage ? '/pay' : '/register'}
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
                 style={{ background: teamConfig.accentColor }}
               >
-                Pay Now
+                {teamConfig.features?.publicPayPage ? 'Pay Now' : 'Register Now'}
                 <ArrowRight size={16} />
               </Link>
             </div>

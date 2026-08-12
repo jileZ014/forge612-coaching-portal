@@ -48,7 +48,9 @@ export function Navbar() {
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-1">
             <NavLink href="#schedule">Schedule</NavLink>
-            <NavLink href="/pay">Pay Fees</NavLink>
+            {teamConfig.features?.publicPayPage
+              ? <NavLink href="/pay">Pay Fees</NavLink>
+              : <NavLink href="/register">Register</NavLink>}
             <Link
               href="/login"
               className="ml-3 px-5 py-2 rounded-full text-sm font-medium text-white transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
@@ -72,7 +74,9 @@ export function Navbar() {
         {mobileOpen && (
           <div className="md:hidden mt-4 pb-2 flex flex-col gap-2 border-t border-border pt-4">
             <MobileNavLink href="#schedule" onClick={() => setMobileOpen(false)}>Schedule</MobileNavLink>
-            <MobileNavLink href="/pay" onClick={() => setMobileOpen(false)}>Pay Fees</MobileNavLink>
+            {teamConfig.features?.publicPayPage
+              ? <MobileNavLink href="/pay" onClick={() => setMobileOpen(false)}>Pay Fees</MobileNavLink>
+              : <MobileNavLink href="/register" onClick={() => setMobileOpen(false)}>Register</MobileNavLink>}
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}

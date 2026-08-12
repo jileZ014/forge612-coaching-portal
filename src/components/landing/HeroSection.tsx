@@ -61,11 +61,11 @@ export function HeroSection() {
             <div className="animate-fade-up" style={{ '--delay': '300ms' } as React.CSSProperties}>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/pay"
+                  href={teamConfig.features?.publicPayPage ? '/pay' : '/register'}
                   className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full text-sm font-semibold text-white transition-all duration-300 hover:brightness-110 active:scale-[0.97]"
                   style={{ background: teamConfig.accentColor }}
                 >
-                  Pay Fees
+                  {teamConfig.features?.publicPayPage ? 'Pay Fees' : 'Register'}
                   <ArrowRight size={16} />
                 </Link>
                 <Link

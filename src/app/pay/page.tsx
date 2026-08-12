@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { notFound } from 'next/navigation';
 import { teamConfig } from '@/lib/team-config';
 import { Navbar } from '@/components/ui/Navbar';
 import { Footer } from '@/components/landing/Footer';
@@ -26,6 +27,11 @@ const demoResults = {
 const ACCESS_ID = 'AZF-3M8P2';
 
 export default function PayPage() {
+  // Demo surface — sample fees against a hardcoded access ID, not real balances.
+  // Tenants that haven't opted in 404 here rather than show a parent numbers that
+  // aren't theirs. They pay through the Stripe hosted invoice link instead.
+  if (!teamConfig.features?.publicPayPage) notFound();
+
   const [lookupState, setLookupState] = useState<LookupState>('idle');
   const [lookupValue, setLookupValue] = useState('');
 

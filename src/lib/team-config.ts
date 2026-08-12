@@ -22,6 +22,15 @@ export interface TenantFeatures {
    * coach names on this club's domain.
    */
   sdTournament: boolean;
+  /**
+   * The public "Pay Fees" balance-lookup page at /pay.
+   * Still a demo surface — it renders sample fees against a hardcoded access
+   * ID rather than reading real balances. On for AZ Flight, where it has always
+   * been. Off for a new tenant until the lookup is wired to real data, which
+   * 404s /pay and points the landing-page CTAs at /register instead. Parents
+   * still pay through the Stripe hosted invoice link they get by text.
+   */
+  publicPayPage: boolean;
 }
 
 export interface DemoScheduleItem {

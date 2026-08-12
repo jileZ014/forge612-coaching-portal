@@ -44,7 +44,7 @@
       },
       {
         "label": "Dues:",
-        "text": "CONFIRM WITH COACH JOSH BEFORE LAUNCH — placeholder pending real fee schedule.",
+        "text": "set by the club. Coach Josh confirms your family's amount when your spot is confirmed, and dues are billed monthly.",
         "highlight": true
       },
       {
@@ -136,7 +136,8 @@
     }
   ],
   "features": {
-    "sdTournament": false
+    "sdTournament": false,
+    "publicPayPage": false
   },
   "billing": {
     "processingFeePercent": 5.5,
