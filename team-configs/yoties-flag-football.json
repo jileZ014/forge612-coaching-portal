@@ -137,5 +137,10 @@
   ],
   "features": {
     "sdTournament": false
+  },
+  "billing": {
+    "processingFeePercent": 5.5,
+    "processingFeeLabel": "Payment Processing Fee",
+    "dashboardTitle": "Yoties Pay"
   }
 }

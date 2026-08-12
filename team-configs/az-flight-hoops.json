@@ -165,5 +165,10 @@
   ],
   "features": {
     "sdTournament": true
+  },
+  "billing": {
+    "processingFeePercent": 5.5,
+    "processingFeeLabel": "Payment Processing Fee",
+    "dashboardTitle": "Flight Pay"
   }
 }

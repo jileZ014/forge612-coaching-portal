@@ -1,5 +1,19 @@
 import config from '../../team-config.json';
 
+export interface BillingConfig {
+  /**
+   * Surcharge added to the parent's invoice as a visible line item, and taken by
+   * the platform as application_fee_amount. The club receives its dues in full.
+   * Stripe's own cut (~2.9% + 30c) comes out of this, so net to Forge612 is
+   * roughly processingFeePercent - 2.9%.
+   */
+  processingFeePercent: number;
+  /** Line-item name the parent sees for the surcharge. */
+  processingFeeLabel: string;
+  /** Product name shown at the top of the coach billing dashboard. */
+  dashboardTitle: string;
+}
+
 export interface TenantFeatures {
   /**
    * The San Diego tournament roster + age/grade verification tools.
@@ -80,6 +94,7 @@ export interface TeamConfig {
   /** Sample schedule shown on the public landing page. Illustrative only. */
   demoSchedule: DemoScheduleItem[];
   features: TenantFeatures;
+  billing: BillingConfig;
   /** Emoji used in coach notifications. 🏀 / 🏈 / 🏐 */
   sportEmoji: string;
   /** Club name as it appears to PARENTS in SMS and on invoices, e.g. "AZ Flight Basketball". */

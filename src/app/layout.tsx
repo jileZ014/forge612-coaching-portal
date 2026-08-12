@@ -34,6 +34,10 @@ export default function RootLayout({
         // @ts-expect-error CSS custom properties
         "--team-accent": teamConfig.accentColor,
         "--team-accent-light": teamConfig.accentColorLight,
+        // Override the defaults in globals.css so every --color-accent consumer
+        // picks up THIS tenant's brand. Inline style on <html> beats the :root rule.
+        "--color-accent": teamConfig.accentColor,
+        "--color-accent-light": teamConfig.accentColorLight,
       }}
     >
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground font-sans">

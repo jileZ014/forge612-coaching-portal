@@ -3,6 +3,8 @@
 import { teamConfig } from '@/lib/team-config';
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiFetch } from '@/lib/api-client';
+import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
 import { collection, getDocs, doc, updateDoc, addDoc, deleteDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Parent, MonthlyPayment, LineItem, PaymentMethod, ParentStatus, RateType, Team, TEAMS, RATE_CONFIG, CatalogItem } from '@/types';
@@ -97,7 +99,58 @@ export default function Dashboard() {
   }>>([]);
   const [showBatchSend, setShowBatchSend] = useState(false);
   const [sentInvoices, setSentInvoices] = useState<Set<string>>(new Set());
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+
+  // This page was the only dashboard route without a client-side auth gate
+  // (the other six redirect). Firestore rules already deny the data, but an
+  // unauthenticated visitor should not see the billing shell at all.
+  useEffect(() => {
+    if (!authLoading && !user) router.push('/login');
+  }, [authLoading, user, router]);
+
   const [resendLoading, setResendLoading] = useState(false);
+
+  // Stripe Connect status for this club. null = not checked yet.
+  type StripeStatus = { connected: boolean; chargesEnabled?: boolean; detailsSubmitted?: boolean };
+  const [stripeStatus, setStripeStatus] = useState<StripeStatus | null>(null);
+  const [stripeBusy, setStripeBusy] = useState(false);
+
+  const loadStripeStatus = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/stripe/connect', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'status' }),
+      });
+      if (!res.ok) { setStripeStatus({ connected: false }); return; }
+      setStripeStatus(await res.json().catch(() => ({ connected: false })));
+    } catch {
+      setStripeStatus({ connected: false });
+    }
+  }, []);
+
+  async function startStripeConnect(action: 'create' | 'onboarding-link') {
+    setStripeBusy(true);
+    try {
+      const res = await apiFetch('/api/stripe/connect', {
+        method: 'POST',
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json().catch(() => ({
+        error: `Stripe request failed (HTTP ${res.status}). Payments may not be configured yet.`,
+      }));
+      if (data.url) {
+        // Stripe-hosted onboarding. The coach returns to /dashboard?stripe=complete.
+        window.location.href = data.url;
+        return;
+      }
+      alert(data.error || 'Could not start Stripe onboarding.');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not reach Stripe.');
+    } finally {
+      setStripeBusy(false);
+    }
+  }
 
   // Existing unpaid invoices from Square (keyed by normalized phone)
   const [existingInvoices, setExistingInvoices] = useState<Map<string, { invoiceId: string; publicUrl: string; amount: number; name: string }>>(new Map());
@@ -133,6 +186,11 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Stripe status needs an ID token, so wait for auth rather than firing on mount.
+  useEffect(() => {
+    if (user) loadStripeStatus();
+  }, [user, loadStripeStatus]);
 
   // Load existing unpaid invoices from Square on mount
   const loadExistingInvoices = useCallback(async () => {
@@ -728,8 +786,8 @@ export default function Dashboard() {
           <div className="flex justify-between items-center mb-4">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-white flex items-center gap-2.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: '#E8632A' }} />
-                Flight Pay
+                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: teamConfig.accentColor }} />
+                {teamConfig.billing.dashboardTitle}
               </h1>
               <p className="text-white/40 text-sm mt-1">{teamConfig.billingLabel} · Unified Invoicing (Stripe + Twilio)</p>
             </div>
@@ -739,7 +797,7 @@ export default function Dashboard() {
                 Registrations
               </a>
               <button onClick={() => setAddModal(true)}
-                className="px-4 py-2 rounded-lg font-medium transition text-white text-sm" style={{ background: '#E8632A' }}>
+                className="px-4 py-2 rounded-lg font-medium transition text-white text-sm" style={{ background: teamConfig.accentColor }}>
                 Add Family
               </button>
             </div>
@@ -757,13 +815,47 @@ export default function Dashboard() {
               {stripeBatchCreating ? 'Creating…' : '2. Create Stripe Invoices'}
             </button>
             <button onClick={sendStripeInvoicesViaSms} disabled={smsSending}
-              className="px-3 py-1.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 text-white" style={{ background: '#E8632A' }}>
+              className="px-3 py-1.5 rounded-lg text-sm font-semibold transition disabled:opacity-50 text-white" style={{ background: teamConfig.accentColor }}>
               {smsSending ? 'Sending…' : '3. Send All SMS via Twilio'}
             </button>
             <button onClick={assignTeams} disabled={migrating}
               className="px-3 py-1.5 bg-white/[0.06] hover:bg-white/10 border border-white/[0.09] rounded-lg text-sm font-medium transition disabled:opacity-50 text-white/80">
               {migrating ? 'Assigning…' : 'Set Teams'}
             </button>
+          </div>
+
+          {/* Stripe Connect — the club's own payout account. Until this is connected,
+              invoices bill to the platform account and no payouts reach the club. */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] uppercase tracking-wide text-white/30 font-semibold mr-1">Payouts</span>
+            {stripeStatus === null ? (
+              <span className="text-xs text-white/40">Checking Stripe…</span>
+            ) : stripeStatus.connected && stripeStatus.chargesEnabled ? (
+              <span className="px-2.5 py-1 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                Stripe connected · payouts on
+              </span>
+            ) : stripeStatus.connected ? (
+              <>
+                <span className="px-2.5 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  Stripe setup incomplete
+                </span>
+                <button onClick={() => startStripeConnect('onboarding-link')} disabled={stripeBusy}
+                  className="px-3 py-1.5 bg-[#141418] hover:bg-white/[0.06] border border-white/[0.09] rounded text-xs font-medium transition disabled:opacity-50 text-white/80">
+                  {stripeBusy ? 'Opening…' : 'Finish Stripe setup'}
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="px-2.5 py-1 rounded text-xs font-medium bg-white/[0.04] text-white/50 border border-white/[0.09]">
+                  Not connected
+                </span>
+                <button onClick={() => startStripeConnect('create')} disabled={stripeBusy}
+                  className="px-3 py-1.5 rounded text-xs font-bold transition disabled:opacity-50 text-black"
+                  style={{ background: teamConfig.accentColor }}>
+                  {stripeBusy ? 'Opening…' : 'Connect Stripe'}
+                </button>
+              </>
+            )}
           </div>
 
           {/* Square fallback (legacy — kept dormant per Taleb hedge) */}
@@ -836,7 +928,7 @@ export default function Dashboard() {
                     <button
                       onClick={() => remindBucket(openBucket)}
                       disabled={bucketTexting}
-                      className="px-3 py-1.5 bg-[#E8632A] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
+                      className="px-3 py-1.5 bg-[var(--color-accent)] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
                     >
                       {bucketTexting ? 'Sending...' : `Re-text all ${buckets[openBucket].length}`}
                     </button>
@@ -904,7 +996,7 @@ export default function Dashboard() {
                               <button
                                 onClick={() => sendTextToParent(p)}
                                 disabled={textingParent === p.id}
-                                className="px-3 py-1.5 bg-[#E8632A] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
+                                className="px-3 py-1.5 bg-[var(--color-accent)] hover:brightness-110 rounded-md text-sm font-medium disabled:opacity-50"
                               >
                                 {textingParent === p.id ? '...' : (activity?.sentAt ? 'Re-text' : 'Text')}
                               </button>
@@ -942,7 +1034,7 @@ export default function Dashboard() {
           <TiltCard delay={240} className="animate-fade-up">
             <button onClick={() => setFilter('owes')} className="w-full h-full text-left bg-[#141418] rounded-xl p-6 border border-white/[0.09] hover:bg-[#1A1A1F] hover:border-white/20 transition-colors">
               <p className="text-white/45 text-xs font-medium uppercase tracking-wide">Total Owed</p>
-              <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? '#E8632A' : undefined }}><CountUp value={totalOwed} format={(n) => '$' + n.toLocaleString()} /></p>
+              <p className="text-3xl font-semibold mt-2 tabular-nums" style={{ color: totalOwed > 0 ? teamConfig.accentColor : undefined }}><CountUp value={totalOwed} format={(n) => '$' + n.toLocaleString()} /></p>
             </button>
           </TiltCard>
         </div>
@@ -974,7 +1066,7 @@ export default function Dashboard() {
           <div className="bg-[#141418] rounded-xl p-16 text-center border border-white/[0.09]">
             <p className="text-white/70 text-lg font-medium mb-1">No families yet</p>
             <p className="text-white/40 text-sm mb-6">Import your roster to start tracking dues and invoices.</p>
-            <a href="/import" className="inline-block px-6 py-3 rounded-lg font-medium transition text-white" style={{ background: '#E8632A' }}>
+            <a href="/import" className="inline-block px-6 py-3 rounded-lg font-medium transition text-white" style={{ background: teamConfig.accentColor }}>
               Import Your Excel Tracker
             </a>
           </div>
@@ -1185,7 +1277,7 @@ export default function Dashboard() {
                             // NOT SENT — the primary call-to-action
                             return (
                               <button onClick={() => sendTextToParent(parent)} disabled={textingParent === parent.id}
-                                className="px-4 py-2 rounded-md text-sm font-medium transition disabled:opacity-50 text-white" style={{ background: '#E8632A' }}>
+                                className="px-4 py-2 rounded-md text-sm font-medium transition disabled:opacity-50 text-white" style={{ background: teamConfig.accentColor }}>
                                 {textingParent === parent.id ? 'Creating...' : 'Text'}
                               </button>
                             );
@@ -1284,7 +1376,7 @@ export default function Dashboard() {
                 <a
                   href={`mailto:${sendTextModal.parent.email}?subject=${encodeURIComponent(`Payment due — ${currentMonthLabel}`)}&body=${encodeURIComponent(sendTextModal.message)}`}
                   className="flex items-center justify-center w-full px-4 py-3 rounded-lg text-sm font-semibold text-white transition hover:brightness-110"
-                  style={{ background: '#E8632A' }}
+                  style={{ background: teamConfig.accentColor }}
                 >
                   Compose Email
                 </a>
@@ -1336,7 +1428,7 @@ export default function Dashboard() {
                   }
                   setSendTextModal(null);
                 }}
-                className="flex-1 px-4 py-3 bg-[#E8632A] hover:brightness-110 rounded-lg font-bold"
+                className="flex-1 px-4 py-3 bg-[var(--color-accent)] hover:brightness-110 rounded-lg font-bold"
               >
                 ✓ Mark Sent
               </button>
@@ -1531,7 +1623,7 @@ function EditFamilyModal({ parent, onClose, onSave, onDelete }: {
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
             <button onClick={handleSave} disabled={saving}
-              className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
+              className="px-4 py-2 bg-[var(--color-accent)] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
               {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -1612,7 +1704,7 @@ function AddFamilyModal({ onClose, onSave }: {
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
           <button onClick={handleSave} disabled={saving || !firstName}
-            className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
+            className="px-4 py-2 bg-[var(--color-accent)] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
             {saving ? 'Adding...' : 'Add Family'}
           </button>
         </div>
@@ -1732,7 +1824,7 @@ function AddChargeModal({ parent, catalogItems, onLoadCatalog, onClose, onSave, 
             <div className="flex gap-2">
               <button onClick={() => setShowAdd(false)} className="px-3 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
               <button onClick={handleSave} disabled={saving || !description || amount <= 0}
-                className="px-3 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
+                className="px-3 py-2 bg-[var(--color-accent)] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
                 {saving ? 'Adding...' : 'Add Charge'}
               </button>
             </div>
@@ -1944,7 +2036,7 @@ function SendInvoiceModal({ parent, monthColumns, onClose, onQueue }: {
           <div className="flex justify-end gap-2">
             <button onClick={onClose} className="px-4 py-2 bg-white/10 hover:bg-white/15 rounded text-sm transition">Cancel</button>
             <button onClick={handleSend} disabled={sending || total === 0}
-              className="px-4 py-2 bg-[#E8632A] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
+              className="px-4 py-2 bg-[var(--color-accent)] hover:brightness-110 rounded text-sm font-medium transition disabled:opacity-50">
               {sending ? 'Creating...' : `Create Invoice ($${total})`}
             </button>
           </div>
@@ -2113,13 +2205,13 @@ function BatchSendModal({ invoices, onClose, onClear, onSent }: {
                   </button>
                 </div>
                 <button onClick={advanceToNext}
-                  className="w-full px-4 py-5 bg-[#E8632A] hover:brightness-110 rounded-lg text-xl font-bold transition text-white">
+                  className="w-full px-4 py-5 bg-[var(--color-accent)] hover:brightness-110 rounded-lg text-xl font-bold transition text-white">
                   Next &rarr;
                 </button>
               </div>
             ) : (
               <button onClick={handleSendAndNext} disabled={publishing}
-                className="w-full px-4 py-5 bg-[#E8632A] hover:brightness-110 rounded-lg text-xl font-bold transition text-white disabled:opacity-50">
+                className="w-full px-4 py-5 bg-[var(--color-accent)] hover:brightness-110 rounded-lg text-xl font-bold transition text-white disabled:opacity-50">
                 {publishing ? 'Publishing...' : `Send Text to ${current.firstName} →`}
               </button>
             )}

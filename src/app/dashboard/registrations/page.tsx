@@ -1,4 +1,5 @@
 'use client';
+import { teamConfig } from '@/lib/team-config';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -225,7 +226,7 @@ export default function RegistrationsReviewPage() {
                         onClick={() => act(reg, 'approve')}
                         disabled={busy}
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold text-white disabled:opacity-50"
-                        style={{ background: 'var(--color-accent, #E8632A)' }}
+                        style={{ background: teamConfig.accentColor }}
                       >
                         <Check size={14} /> {busy ? 'Working…' : 'Approve'}
                       </button>

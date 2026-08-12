@@ -11,6 +11,28 @@ import type { Parent } from '@/types';
  */
 export const MAX_INVOICE_USD = 2000;
 
+/**
+ * Surcharge added to the parent's invoice, in cents, and taken by the platform
+ * as application_fee_amount. The club is paid its dues in full; Stripe's own cut
+ * comes out of the platform's fee.
+ */
+export function processingFeeCents(amountCents: number): number {
+  const pct = teamConfig.billing?.processingFeePercent ?? 0;
+  if (pct <= 0) return 0;
+  return Math.round(amountCents * (pct / 100));
+}
+
+/**
+ * The club's connected Stripe account, or '' if they haven't onboarded yet.
+ * Written by /api/stripe/connect at runtime, so it lives in Firestore rather
+ * than build-time team-config.json.
+ */
+export async function getConnectedAccountId(): Promise<string> {
+  const { getAdminDb } = await import('@/lib/firebase-admin');
+  const snap = await getAdminDb().collection('teams').doc(teamConfig.teamId).get();
+  return ((snap.data() as { stripeAccountId?: string } | undefined)?.stripeAccountId ?? '').trim();
+}
+
 let _stripe: Stripe | null = null;
 
 export function getStripe(): Stripe {
@@ -182,6 +204,15 @@ export async function createMonthlyInvoice(opts: {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`).slice(0, 16);
   const idempotencyKey = `inv_${opts.parent.id}_${opts.month}_${Math.round(amount * 100)}_${requestId}`;
 
+  // Connect: if the club has onboarded, this is a DESTINATION charge — the invoice
+  // is created on the Forge612 platform account, the club's dues transfer to their
+  // connected account, and the platform keeps application_fee_amount. If they have
+  // not onboarded, fall back to a plain platform invoice (AZ Flight's original
+  // behaviour) so nothing regresses.
+  const connectedAccountId = await getConnectedAccountId();
+  const duesCents = Math.round(amount * 100);
+  const feeCents = connectedAccountId ? processingFeeCents(duesCents) : 0;
+
   // 1) Create draft invoice (idempotent)
   const draftCached = await stripe.invoices.create(
     {
@@ -190,10 +221,19 @@ export async function createMonthlyInvoice(opts: {
       days_until_due: opts.daysUntilDue ?? 7,
       auto_advance: false,
       description: `Monthly tuition for ${opts.month}`,
+      ...(connectedAccountId
+        ? {
+            application_fee_amount: feeCents,
+            transfer_data: { destination: connectedAccountId },
+          }
+        : {}),
       metadata: {
         firestoreParentId: opts.parent.id,
         month: opts.month,
         tier: opts.parent.rateType,
+        ...(connectedAccountId
+          ? { connectedAccountId, processingFeeCents: String(feeCents) }
+          : {}),
       },
     },
     { idempotencyKey: `${idempotencyKey}_draft` },
@@ -227,6 +267,21 @@ export async function createMonthlyInvoice(opts: {
       },
       { idempotencyKey: `${idempotencyKey}_item` },
     );
+    // Second line item: the processing surcharge the parent pays on top of dues.
+    // Adding it here (rather than deducting from dues) is what keeps the club whole —
+    // they receive their full monthly rate and the platform fee comes from the parent.
+    if (feeCents > 0) {
+      await stripe.invoiceItems.create(
+        {
+          customer: customer.id,
+          invoice: draft.id,
+          amount: feeCents,
+          currency: 'usd',
+          description: `${teamConfig.billing.processingFeeLabel} (${teamConfig.billing.processingFeePercent}%)`,
+        },
+        { idempotencyKey: `${idempotencyKey}_fee` },
+      );
+    }
   } catch (itemErr) {
     try {
       await stripe.invoices.voidInvoice(draft.id);
