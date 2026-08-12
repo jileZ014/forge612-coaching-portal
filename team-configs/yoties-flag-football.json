@@ -134,5 +134,8 @@
       "location": "Cave Creek Sports Complex",
       "type": "game"
     }
-  ]
+  ],
+  "features": {
+    "sdTournament": false
+  }
 }

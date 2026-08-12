@@ -1,7 +1,8 @@
 'use client';
+import { teamConfig } from '@/lib/team-config';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import {
   getRosterByTeam,
   addRosterPlayer,
@@ -47,6 +48,10 @@ type FieldKey =
 type Draft = Partial<RosterPlayer>;
 
 export default function CoachRosterPage() {
+  // AZ-Flight-only feature. Other tenants 404 rather than render another
+  // club's coach names and team codes on their own domain.
+  if (!teamConfig.features?.sdTournament) notFound();
+
   const params = useParams<{ teamCode: string }>();
   const teamCode = params?.teamCode ?? '';
   const team = useMemo(() => TEAMS.find((t) => t.code === teamCode), [teamCode]);

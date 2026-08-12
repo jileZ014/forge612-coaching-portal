@@ -1,9 +1,10 @@
 'use client';
+import { teamConfig } from '@/lib/team-config';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { apiFetch } from '@/lib/api-client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, notFound } from 'next/navigation';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { useAuth } from '@/lib/auth-context';
 import {
@@ -58,6 +59,10 @@ function statusScore(r: Row): number {
 }
 
 export default function SdVerificationPage() {
+  // AZ-Flight-only feature. Other tenants 404 rather than render another
+  // club's coach names and team codes on their own domain.
+  if (!teamConfig.features?.sdTournament) notFound();
+
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 

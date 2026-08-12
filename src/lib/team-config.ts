@@ -1,5 +1,15 @@
 import config from '../../team-config.json';
 
+export interface TenantFeatures {
+  /**
+   * The San Diego tournament roster + age/grade verification tools.
+   * AZ-Flight-specific (hardcoded team codes and coach names). Off for every
+   * other tenant, which 404s those routes rather than exposing another club's
+   * coach names on this club's domain.
+   */
+  sdTournament: boolean;
+}
+
 export interface DemoScheduleItem {
   title: string;
   date: string;
@@ -69,6 +79,7 @@ export interface TeamConfig {
   demoVenue: string;
   /** Sample schedule shown on the public landing page. Illustrative only. */
   demoSchedule: DemoScheduleItem[];
+  features: TenantFeatures;
   /** Emoji used in coach notifications. 🏀 / 🏈 / 🏐 */
   sportEmoji: string;
   /** Club name as it appears to PARENTS in SMS and on invoices, e.g. "AZ Flight Basketball". */
