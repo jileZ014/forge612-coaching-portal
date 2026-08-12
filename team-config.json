@@ -1,63 +1,92 @@
 {
-  "teamId": "yoties-flag-football",
-  "teamName": "Yoties Flag Football",
-  "sport": "flag-football",
+  "teamId": "az-flight-hoops",
+  "teamName": "AZ Flight Hoops",
+  "sport": "basketball",
   "primaryColor": "#0A0A0A",
-  "accentColor": "#E87517",
-  "accentColorLight": "#F0913F",
-  "coachEmail": "info@shemakesplays.org",
-  "coachName": "Coach Josh",
-  "domain": "yotiesfootball.com",
-  "firebaseProject": "yoties-flag-football",
+  "accentColor": "#E8632A",
+  "accentColorLight": "#F0845A",
+  "coachEmail": "team@azflighthoops.com",
+  "coachName": "Coach Jonas",
+  "domain": "azflighthoops.com",
+  "firebaseProject": "flight-pay-az",
   "stripeAccountId": "",
-  "logoUrl": "/tenants/yoties-flag-football/logo.png",
-  "tagline": "Hunt. Howl. Score.",
-  "sportEmoji": "🏈",
-  "billingLabel": "Yoties Flag Football",
-  "invoiceEmailDomain": "shemakesplays.org",
+  "logoUrl": "/tenants/az-flight-hoops/logo.png",
+  "tagline": "Building Champions On & Off the Court",
+  "sportEmoji": "🏀",
+  "billingLabel": "AZ Flight Basketball",
+  "invoiceEmailDomain": "azflighthoops.com",
   "season": "2026-2027",
-  "duesBlurb": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit.",
+  "duesBlurb": "AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games, tournaments, and equipment.",
   "registration": {
     "ageGroups": [
+      {
+        "code": "9u",
+        "label": "9U"
+      },
       {
         "code": "10u",
         "label": "10U"
       },
       {
-        "code": "12u",
-        "label": "12U"
+        "code": "12u/13u",
+        "label": "12U / 13U"
+      },
+      {
+        "code": "14u",
+        "label": "14U"
+      },
+      {
+        "code": "15u",
+        "label": "15U"
       }
     ],
-    "intro": "Yoties Flag Football is a program of She Makes Plays Foundation of AZ, a registered 501(c)(3) nonprofit. We field competitive girls flag football teams in North Phoenix.",
+    "intro": "AZ Flight is a non-profit, all-volunteer club. Monthly dues cover gym time, games, tournaments, and equipment.",
     "bullets": [
       {
-        "label": "Divisions:",
-        "text": "10U and 12U girls. No flag football experience required — if she loves to run and compete, we'll teach her the rest."
+        "label": "Monthly dues:",
+        "text": "$95 per player ($170 for two players), due by the 7th of each month."
       },
       {
-        "label": "Where we play:",
-        "text": "Brigade Football League plus local tournaments. Practices in the Desert Ridge / North Scottsdale / Cave Creek area."
-      },
-      {
-        "label": "Official affiliate:",
-        "text": "we are an official NFL FLAG affiliate team."
-      },
-      {
-        "label": "Dues:",
-        "text": "CONFIRM WITH COACH JOSH BEFORE LAUNCH — placeholder pending real fee schedule.",
+        "label": "Heads up:",
+        "text": "starting September 2026, monthly club fees will increase.",
         "highlight": true
       },
       {
-        "label": "Ways to pay:",
-        "text": "monthly invoice by text or email."
+        "label": "New players:",
+        "text": "your first payment is two months up front ($190), non-refundable, to hold your player's spot (a two-month commitment). It's $95/month after that."
       },
       {
-        "label": "Questions:",
-        "text": "reach us at info@shemakesplays.org or DM @yotiesfootball on Instagram."
+        "label": "Team kit:",
+        "text": "$90 one-time (reversible jersey + backpack)."
+      },
+      {
+        "label": "Ways to pay:",
+        "text": "monthly invoice by text or email, Zelle to 303-908-6810, or check/cash."
+      },
+      {
+        "label": "AAU membership",
+        "text": "is required. Sign up at aausports.org under \"Arizona Flight Basketball Club\" (code W3E3ED)."
+      },
+      {
+        "label": "Team communication",
+        "text": "and schedules go out through the Band app (we'll invite the email you provide)."
       }
     ],
-    "links": [],
-    "successNote": "You'll get a text once your spot is confirmed."
+    "links": [
+      {
+        "label": "Waiver & Release",
+        "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightWaiverandReleaseForm/formperma/YsZX8UohvyRTa9RJ7_AjWPo8Dbb-bADqzzniMNLF7pc"
+      },
+      {
+        "label": "Code of Conduct",
+        "url": "https://forms.zohopublic.com/virtualoffice22550/form/AZWestValleyFlightBasketballClubEnrollmentChecklis/formperma/bUGl_5b9IK7zDH3VBBnlOXo82CoPLK1_HxmACftpymk"
+      },
+      {
+        "label": "AAU membership",
+        "url": "https://play.aausports.org/joinaau/multimembershipapplication.aspx"
+      }
+    ],
+    "successNote": "You'll get a text with your first invoice once you're approved."
   },
   "sportConfig": {
     "playerLabel": "Player",
@@ -67,80 +96,79 @@
     "gameLabel": "Game",
     "seasonLabel": "Season",
     "positionOptions": [
-      "Quarterback",
-      "Wide Receiver",
-      "Center",
-      "Rusher",
-      "Safety",
-      "Cornerback"
+      "Point Guard",
+      "Shooting Guard",
+      "Small Forward",
+      "Power Forward",
+      "Center"
     ],
     "eventTypes": [
       "practice",
       "game",
       "tournament",
-      "combine"
+      "scrimmage"
     ]
   },
-  "heroImageUrl": "/tenants/yoties-flag-football/hero-bg.jpg",
-  "ctaImageUrl": "/tenants/yoties-flag-football/cta-bg.jpg",
-  "demoOpponent": "Desert Storm",
-  "demoVenue": "Reach 11 Sports Complex, Phoenix",
+  "heroImageUrl": "/tenants/az-flight-hoops/hero-bg.png",
+  "ctaImageUrl": "/tenants/az-flight-hoops/cta-bg.png",
+  "demoOpponent": "AZ Monstarz",
+  "demoVenue": "Arizona Sports Complex, Mesa",
   "demoSchedule": [
     {
       "title": "Practice",
       "date": "2026-04-07",
-      "startTime": "17:30",
-      "endTime": "19:00",
-      "location": "Athletic Republic, North Phoenix",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
       "type": "practice"
     },
     {
       "title": "Practice",
       "date": "2026-04-09",
-      "startTime": "17:30",
-      "endTime": "19:00",
-      "location": "Athletic Republic, North Phoenix",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
       "type": "practice"
     },
     {
-      "title": "Game vs Desert Storm",
+      "title": "Game vs AZ Monstarz",
       "date": "2026-04-12",
       "startTime": "10:00",
-      "endTime": "11:00",
-      "location": "Reach 11 Sports Complex, Phoenix",
+      "endTime": "11:30",
+      "location": "Arizona Sports Complex, Mesa",
       "type": "game"
     },
     {
       "title": "Practice",
       "date": "2026-04-14",
-      "startTime": "17:30",
-      "endTime": "19:00",
-      "location": "Athletic Republic, North Phoenix",
+      "startTime": "18:00",
+      "endTime": "19:30",
+      "location": "Scottsdale Boys & Girls Club",
       "type": "practice"
     },
     {
-      "title": "Brigade League Play",
+      "title": "PHX Desert Classic",
       "date": "2026-04-19",
       "startTime": "08:00",
-      "endTime": "14:00",
-      "location": "Reach 11 Sports Complex, Phoenix",
+      "endTime": "18:00",
+      "location": "Arizona Sports Complex, Mesa",
       "type": "tournament"
     },
     {
-      "title": "Game vs Heat Wave",
+      "title": "Game vs West Valley Warriors",
       "date": "2026-04-16",
-      "startTime": "18:00",
-      "endTime": "19:00",
-      "location": "Cave Creek Sports Complex",
+      "startTime": "19:00",
+      "endTime": "20:30",
+      "location": "Peoria Community Center",
       "type": "game"
     }
   ],
   "features": {
-    "sdTournament": false
+    "sdTournament": true
   },
   "billing": {
     "processingFeePercent": 5.5,
     "processingFeeLabel": "Payment Processing Fee",
-    "dashboardTitle": "Yoties Pay"
+    "dashboardTitle": "Flight Pay"
   }
 }
