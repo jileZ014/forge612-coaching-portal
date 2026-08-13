@@ -193,7 +193,13 @@ async function main() {
     process.exit(0);
   }
 
+  // A simulated alert MUST be unmistakable. The first --simulate run on 2026-08-12 used the
+  // real format verbatim; Jonas read it as Josh actually logging in. Only "acct_SIMULATED" and a
+  // stale timestamp gave it away, which is not good enough for something that lands on a phone.
   const lines = [
+    ...(SIMULATE
+      ? ['⚠️⚠️ TEST MESSAGE — NOT REAL. Josh has NOT done anything. ⚠️⚠️', '']
+      : []),
     '🏈 Coach Josh is in the Yoties portal',
     '',
     ...toFire.map(([, , headline]) => '· ' + headline),
@@ -201,6 +207,7 @@ async function main() {
     'Last sign-in: ' + seen.lastSignIn,
     PORTAL_URL,
     '',
+    ...(SIMULATE ? ['⚠️ Again: this is a FORMAT TEST, ignore it.', ''] : []),
     'Giles',
   ];
   const ok = await sendTelegram(lines.join('\n'));
